@@ -1,0 +1,7 @@
+.vscode
+.cache
+.clangd
+compile_commands.json
+.osdev
+*.a
+*.o
