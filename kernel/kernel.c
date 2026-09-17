@@ -16,12 +16,13 @@ void kmain(void) {
     /* inits */
     dsp_init();
     dsp_set_color(_LIGHT_RED, _BLACK);
-    dsp_print("Display initialized. [+]");
+    dsp_print("Display initialized. [+]\n");
     idt_init();
+    dsp_print("IDT initialized [+]\n");
     kb_init();
-    dsp_print("Keyboard intialized. [+]");
+    dsp_print("Keyboard intialized. [+]\n");
 
-    dsp_print("TRS OS v 0.0.1\n");
+    dsp_print("TRS OS v 0.0.2\n");
     dsp_print("==============\n\n");
 
     dsp_set_color(_LIGHT_GREEN, _BLACK);

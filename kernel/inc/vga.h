@@ -37,5 +37,6 @@ void dsp_clear(void);
 void dsp_set_color(_color fg, _color bg);
 void dsp_putchar(char c);
 void dsp_print(const char* str);
+void dsp_print_hex(unsigned int value);
 
 #endif // VGA_H

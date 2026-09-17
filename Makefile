@@ -17,10 +17,10 @@ $(shell mkdir -p $(BUILD_DIR))
 INC_DIRS := $(shell find . -type d -name inc)
 INCLUDES = $(addprefix -I,$(INC_DIRS))
 
-# --- Лимиты, зашитые в бутлоадер (держим в синхроне с .asm!) ---
-STAGE1_MAX  = 512            # 1 сектор
-STAGE2_MAX  = 64 * 512       # 64 сектора (см. boot_one.asm STAGE2_SECTORS)
-KERNEL_MAX  = 256 *512      # 256 секторов (см. boot_two.asm KERNEL_SECTORS)
+# --- Лимиты в байтах, зашитые в бутлоадер (держим в синхроне с .asm!) ---
+STAGE1_MAX = 512      # 1 сектор
+STAGE2_MAX = 32768    # 64 * 512  (см. boot_one.asm STAGE2_SECTORS)
+KERNEL_MAX = 131072   # 256 * 512 (см. boot_two.asm KERNEL_SECTORS)
 
 CFLAGS = -m32 -ffreestanding -fno-pie -nostdlib -fno-stack-protector \
          -fno-asynchronous-unwind-tables -fno-builtin -O2 -Wall -Wextra \
@@ -32,36 +32,47 @@ KERNEL_BIN = $(BUILD_DIR)/kernel_flat.bin
 # --- Автосбор всех .c ядра, libc и trfs ---
 KERNEL_SRCS := $(shell find kernel libc trfs -name '*.c')
 KERNEL_OBJS := $(patsubst %.c,$(BUILD_DIR)/%.o,$(KERNEL_SRCS))
-ENTRY_OBJ   := $(BUILD_DIR)/kernel/entry.o
-DEPS        := $(KERNEL_OBJS:.o=.d)
+
+# --- Автосбор всех .asm ядра (entry.asm, idt_asm.asm, ...) ---
+ASM_SRCS := $(shell find kernel -name '*.asm')
+ASM_OBJS := $(patsubst kernel/%.asm,$(BUILD_DIR)/kernel/%.o,$(ASM_SRCS))
+
+DEPS := $(KERNEL_OBJS:.o=.d)
 
 .PHONY: all clean run debug
 
 all: $(BUILD_DIR)/disk.img
 
+# --- Bootloader ---
 $(BUILD_DIR)/stage1.bin: $(BOOT_DIR)/boot_one.asm
 	$(AS) -f bin $< -o $@
+	@stat -c%s $@ | awk -v m=$(STAGE1_MAX) \
+		'{ if ($$1 > m) { print "ERROR: stage1 > 512 bytes"; exit 1 } }'
 
 $(BUILD_DIR)/stage2.bin: $(BOOT_DIR)/boot_two.asm
 	$(AS) -f bin $< -o $@
+	@stat -c%s $@ | awk -v m=$(STAGE2_MAX) \
+		'{ if ($$1 > m) { print "ERROR: stage2 > 64 sectors, increase STAGE2_SECTORS"; exit 1 } }'
 	
 # --- Компиляция C: одно правило на все файлы ---
 $(BUILD_DIR)/%.o: %.c | $(BUILD_DIR)
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/kernel/entry.o: kernel/entry.asm | $(BUILD_DIR)
+# --- Компиляция ASM ядра: одно правило на все файлы ---
+$(BUILD_DIR)/kernel/%.o: kernel/%.asm | $(BUILD_DIR)
 	@mkdir -p $(dir $@)
 	$(AS) -f elf32 $< -o $@
 
 # --- Link kernel → ELF ---
-$(KERNEL): $(ENTRY_OBJ) $(KERNEL_OBJS) kernel/linker.ld | $(BUILD_DIR)
-	$(LD) $(LDFLAGS) $(ENTRY_OBJ) $(KERNEL_OBJS) -o $@
+$(KERNEL): $(ASM_OBJS) $(KERNEL_OBJS) kernel/linker.ld | $(BUILD_DIR)
+	$(LD) $(LDFLAGS) $(ASM_OBJS) $(KERNEL_OBJS) -o $@
 
 # --- ELF → flat binary + проверка лимита ---
 $(KERNEL_BIN): $(KERNEL)
 	$(OBJCOPY) -O binary $< $@
-	@stat -c%s $@ | awk -v m=$(KERNEL_MAX) '{ if ($$1 > m) { print "ERROR: kernel > 256 sectors, increase KERNEL_SECTORS"; exit 1 } }'
+	@stat -c%s $@ | awk -v m=$(KERNEL_MAX) \
+		'{ if ($$1 > m) { print "ERROR: kernel > 256 sectors, increase KERNEL_SECTORS"; exit 1 } }'
 
 # --- Disk image ---
 # Layout: sector 0 = stage1, sectors 1-64 = stage2, sectors 65+ = kernel (flat)
@@ -69,7 +80,7 @@ $(BUILD_DIR)/disk.img: $(BUILD_DIR)/stage1.bin $(BUILD_DIR)/stage2.bin $(KERNEL_
 	dd if=/dev/zero of=$@ bs=512 count=2048
 	dd if=$(BUILD_DIR)/stage1.bin of=$@ bs=512 conv=notrunc
 	dd if=$(BUILD_DIR)/stage2.bin of=$@ bs=512 seek=1 conv=notrunc
-	dd if=$(KERNEL_BIN) of=$@ bs=512 seek=65 conv=notrunc
+	dd if=$(KERNEL_BIN)   of=$@ bs=512 seek=65 conv=notrunc
 
 # --- Run in QEMU ---
 run: all

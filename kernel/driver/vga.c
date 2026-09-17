@@ -12,6 +12,8 @@ static int row = 0;
 static int col = 0;
 static unsigned char vga_attr = 0x0F;
 
+static const char hex_digits[] = "0123456789ABCDEF";
+
 static inline unsigned char _make_attr(_color fg, _color bg) {
     return (unsigned char)((bg << 4) | (fg & 0x0F));
 }
@@ -92,5 +94,17 @@ void dsp_putchar(char c) {
 void dsp_print(const char *str) {
     while(*str) {
         dsp_putchar(*str++);
+    }
+}
+
+void dsp_print_hex(unsigned int value) {
+    dsp_print("0x");
+    int started = 0;
+    for(int i = 28; i >= 0; i -= 4) {
+        unsigned char nibble = (unsigned char)((value >> i) & 0xF);
+        if(nibble || started || i == 0) {
+            dsp_putchar(hex_digits[nibble]);
+            started = 1;
+        }
     }
 }

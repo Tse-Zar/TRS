@@ -18,7 +18,7 @@ void pic_remap(unsigned char off) {
 void pic_unmask(unsigned char line) {
     unsigned short port = (line < 8) ? PIC1_DATA : PIC2_DATA;
     unsigned char bit = (unsigned char)(1 << (line & 7));
-    outb(port, (unsigned char)(inb(port) | bit)); 
+    outb(port, (unsigned char)(inb(port) & ~bit)); 
 }
 
 void pic_mask(unsigned char line) {
