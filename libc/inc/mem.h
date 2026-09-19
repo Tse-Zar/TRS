@@ -1,3 +1,11 @@
+/*
+    ======================================
+    = TSEZAR TSEZAR TSEZAR TSEZAR TSEZAR =
+    = ---------------------------------- =
+    = TRS LIBC Dynamic Memory header --- =
+    = ====================================
+*/
+
 #ifndef MEM_H
 #define MEM_H
 
@@ -5,7 +13,7 @@
 
 void* malloc(unsigned long size);
 void* calloc(unsigned long num_of_elements, unsigned long size_of_elements);
-void* realoc(void* ptr, unsigned long new_size);
+void* realloc(void* ptr, unsigned long new_size);
 
 void free(void* ptr);
 

@@ -7,6 +7,9 @@
     ======================================
 */
 
+#include "pic.h"
+#include "stream.h"
+#include "version.h"
 #include <idt.h>
 #include <keyboard.h>
 #include <vga.h>
@@ -17,6 +20,9 @@ void kmain(void) {
     dsp_init();
     dsp_set_color(_LIGHT_GREEN, _BLACK);
     dsp_print("Display initialized. [+]\n");
+
+    pic_remap(IRQ_BASE);
+
     idt_init();
     dsp_print("IDT initialized [+]\n");
     kb_init();
@@ -25,7 +31,7 @@ void kmain(void) {
     dsp_print("RAM pagging initialized [+]\n");
 
     dsp_set_color(_LIGHT_MAGENTA, _BLACK);
-    dsp_print("TRS OS v 0.0.2\n");
+    dsp_print("TRS OS v" __TRS_VERSION "\n");
     dsp_print("==============\n\n");
 
     dsp_set_color(_CYAN, _BLACK);
@@ -35,7 +41,10 @@ void kmain(void) {
     dsp_set_color(_LIGHT_GREY, _BLACK);
     //term_init();
     
+    stream_t* kb = kbd_get_stream();
+    char c;
     while(1) {
+        if(stream_try_read(kb, &c, 1) == 1) dsp_putchar(c);
         __asm__ volatile ("hlt");
     }
 }

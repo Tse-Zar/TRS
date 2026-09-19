@@ -2,6 +2,8 @@
 #include <io.h>
 
 void pic_remap(unsigned char off) {
+    unsigned flags = irq_save();
+    
     outb(PIC1_CMD, 0x11);     io_wait();
     outb(PIC2_CMD, 0x11);     io_wait();
     outb(PIC1_DATA, off);     io_wait();
@@ -13,6 +15,8 @@ void pic_remap(unsigned char off) {
 
     outb(PIC1_DATA, 0xFF);
     outb(PIC2_DATA, 0xFF);
+
+    irq_restore(flags);
 }
 
 void pic_unmask(unsigned char line) {

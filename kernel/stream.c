@@ -1,10 +1,6 @@
 #include <stream.h>
 #include <io.h>
 
-static inline unsigned irq_save(void) { unsigned f; __asm__ volatile("pushfl; popl %0; cli" : "=r"(f)); return f;}
-static inline void     irq_restore(unsigned f) { __asm__ volatile("pushl %0; popfl" :: "r"(f)); }
-
-
 int ringbuf_put(ringbuf_t* rb, unsigned char c) {
     unsigned int next = (rb->head + 1) & (STREAM_BUFFER_SIZE - 1);
     if(next == rb->tail) return -1;

@@ -1,3 +1,11 @@
+/*
+    ======================================
+    = TSEZAR TSEZAR TSEZAR TSEZAR TSEZAR =
+    = ---------------------------------- =
+    = TRS LIBC Dynamic Memory  --------- =
+    = ====================================
+*/
+
 #include <mem.h>
 
 void* malloc(unsigned long size) {

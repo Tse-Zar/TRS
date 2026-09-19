@@ -31,3 +31,8 @@ TRS/
 - Файловая система TRFS (VFS) — `trfs/`
 - Менеджер памяти и пейджинг — `kernel/memory_pagging.c`
 - Динамическое выделение памяти (`malloc`/`free`)
+
+
+**ВДОХНОВЕНИЕ**
+- https://github.com/levex/osdev
+- https://youtube.com/@vividbw

@@ -14,8 +14,6 @@
 #include <pic.h>
 #include <stdbool.h>
 
-#define DONE outb(PIC1_CMD, PIC_EOI)
-
 static const char scancode_map[58][2] = {
     [0x02] = {'1','!'}, [0x03] = {'2','@'}, [0x04] = {'3','#'},
     [0x05] = {'4','$'}, [0x06] = {'5','%'}, [0x07] = {'6','^'},
@@ -46,12 +44,17 @@ static bool caps_down  = false;
 
 stream_t* kbd_get_stream(void) { return &kb_stream; }
 
-void kb_init() {
+void kb_init(void) {
     stream_init(&kb_stream, ST_READ);
-    pic_remap(0x20);
     irq_install(IRQ_KBD_LINE, kb_irq_handler);
-    while(inb(0x64) & 0x01) inb(0x60);
+    
+    while(inb(KB_COM_PORT) & 0x01) inb(KB_DATA_PORT);
+
     pic_unmask(1);
+}
+
+static void kb_done(void) {
+    outb(PIC1_CMD, PIC_EOI);
 }
 
 void kb_irq_handler(void) {
@@ -59,12 +62,12 @@ void kb_irq_handler(void) {
 
     if(sc == 0x0E) {
         ringbuf_put(&kb_stream.rb, '\b');
-        DONE;
+        kb_done();
         return;
     }
     if(sc == 0xE0) {
         ext_prefix = 1;
-        DONE; 
+        kb_done(); 
         return;
     }
     bool release = (sc & 0x80) != 0;
@@ -73,12 +76,12 @@ void kb_irq_handler(void) {
 
     if(code == 0x2A || code == 0x36) {
         shift_down = !release;
-        DONE;
+        kb_done();
         return;
     }
     if(code == 0x3A && !release) {
         caps_down = !caps_down;
-        DONE;
+        kb_done();
         return;
     }
 
@@ -90,7 +93,8 @@ void kb_irq_handler(void) {
             kb_stream.overflow++;
         }
     }
+    
     ext_prefix = 0;
-    DONE;
+    kb_done();
     return;
 }
