@@ -84,6 +84,11 @@ void dsp_putchar(char c) {
         return;
     }
 
+    if(c == '\b') {
+        col--;
+        _MEMORY[row * _WIDTH + col] = ' ';
+    }
+
     unsigned short entry = (unsigned short)(vga_attr << 8) | (unsigned char)c;
     _MEMORY[row * _WIDTH + col] = entry;
     col++;

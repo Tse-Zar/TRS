@@ -21,11 +21,12 @@ static const char scancode_map[58][2] = {
     [0x05] = {'4','$'}, [0x06] = {'5','%'}, [0x07] = {'6','^'},
     [0x08] = {'7','&'}, [0x09] = {'8','*'}, [0x0A] = {'9','('},
     [0x0B] = {'0',')'}, [0x0C] = {'-','_'}, [0x0D] = {'=','+'},
-    [0x0F] = {'\t','\t'},
+    [0x0F] = {'\t','\t'}, [0x0E] = {'\b', '\b'},
     [0x10] = {'q','Q'}, [0x11] = {'w','W'}, [0x12] = {'e','E'},
     [0x13] = {'r','R'}, [0x14] = {'t','T'}, [0x15] = {'y','Y'},
     [0x16] = {'u','U'}, [0x17] = {'i','I'}, [0x18] = {'o','O'},
     [0x19] = {'p','P'}, [0x1A] = {'[','{'}, [0x1B] = {']','}'},
+    [0x1C] = {'\n','\n'}, 
     [0x1E] = {'a','A'}, [0x1F] = {'s','S'}, [0x20] = {'d','D'},
     [0x21] = {'f','F'}, [0x22] = {'g','G'}, [0x23] = {'h','H'},
     [0x24] = {'j','J'}, [0x25] = {'k','K'}, [0x26] = {'l','L'},
@@ -56,9 +57,15 @@ void kb_init() {
 void kb_irq_handler(void) {
     unsigned char sc = inb(KB_DATA_PORT);
 
+    if(sc == 0x0E) {
+        ringbuf_put(&kb_stream.rb, '\b');
+        DONE;
+        return;
+    }
     if(sc == 0xE0) {
         ext_prefix = 1;
         DONE; 
+        return;
     }
     bool release = (sc & 0x80) != 0;
 
@@ -67,10 +74,12 @@ void kb_irq_handler(void) {
     if(code == 0x2A || code == 0x36) {
         shift_down = !release;
         DONE;
+        return;
     }
     if(code == 0x3A && !release) {
         caps_down = !caps_down;
         DONE;
+        return;
     }
 
     if(!release && code < 58 && scancode_map[code][0]) {
@@ -83,4 +92,5 @@ void kb_irq_handler(void) {
     }
     ext_prefix = 0;
     DONE;
+    return;
 }
