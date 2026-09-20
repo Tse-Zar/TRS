@@ -60,11 +60,6 @@ static void kb_done(void) {
 void kb_irq_handler(void) {
     unsigned char sc = inb(KB_DATA_PORT);
 
-    if(sc == 0x0E) {
-        ringbuf_put(&kb_stream.rb, '\b');
-        kb_done();
-        return;
-    }
     if(sc == 0xE0) {
         ext_prefix = 1;
         kb_done(); 
@@ -81,6 +76,11 @@ void kb_irq_handler(void) {
     }
     if(code == 0x3A && !release) {
         caps_down = !caps_down;
+        kb_done();
+        return;
+    }
+    if(code == 0x0E && !release) {
+        ringbuf_put(&kb_stream.rb, '\b');
         kb_done();
         return;
     }

@@ -31,6 +31,11 @@ start:
     mov si, msg_booting
     call print_string
 
+    ; --- reset disk --- 
+    xor ax, ax
+    mov dl, [boot_drive]
+    int 0x13
+
     ; --- read stage2 ---
     mov ah, 0x42            ; INT 13h, ah = 42h - lba read
     mov dl, [boot_drive]    ; number of boot disk

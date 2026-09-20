@@ -27,8 +27,8 @@ void kmain(void) {
     dsp_print("IDT initialized [+]\n");
     kb_init();
     dsp_print("Keyboard intialized. [+]\n");
-    pagging_init();
-    dsp_print("RAM pagging initialized [+]\n");
+    //pagging_init();
+    //dsp_print("RAM pagging initialized [+]\n");
 
     dsp_set_color(_LIGHT_MAGENTA, _BLACK);
     dsp_print("TRS OS v" __TRS_VERSION "\n");
