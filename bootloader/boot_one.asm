@@ -96,8 +96,6 @@ dap_buffer:
     dw STAGE2_OFF
     dw STAGE2_SEG
     dq STAGE2_LBA
-dap_sectors_read:
-    dw 0
 
 ; --- mbr ---
 times 510-($-$$) db 0

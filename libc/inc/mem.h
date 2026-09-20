@@ -9,7 +9,7 @@
 #ifndef MEM_H
 #define MEM_H
 
-#define HEAP_SIZE 1024 * 64
+#define HEAP_SIZE (1024 * 64)
 
 void* malloc(unsigned long size);
 void* calloc(unsigned long num_of_elements, unsigned long size_of_elements);

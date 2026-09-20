@@ -1,6 +1,6 @@
 #ifndef STD_H
 #define STD_H
 
-#define NULL 0
+#define NULL (void*)0
 
 #endif // STD_H

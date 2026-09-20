@@ -16,7 +16,4 @@ void panic_out_str(const char* s);
 void panic_out_hex(unsigned v);
 void panic_halt(void);
 
-#define kassert(expr) \
-    ((expr) ? (void)0 : kassert_fail(#expr, __FILE__, __LINE__))
-
 #endif // PANIC_H

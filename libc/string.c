@@ -83,7 +83,9 @@ int memcmp(const void* a, const void* b, size_t len) {
     const unsigned char* second = (const unsigned char*)b;
 
     while(len--) {
-        if(*first != *second) return *first++ - *second++;
+        if(*first != *second) return *first - *second;
+        first++;
+        second++;
     }
 
     return 0;
