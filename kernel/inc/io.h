@@ -16,12 +16,12 @@ static inline void io_wait(void) { outb(0x80, 0); }
 
 static inline unsigned irq_save(void) {
     unsigned flags;
-    __asm__ volatile("pushfl; popl %0; cli" : "=r"(flags) :: "memory");
+    __asm__ volatile("pushfq; popq %0; cli" : "=r"(flags) :: "memory");
     return flags;
 }
 
 static inline void irq_restore(unsigned flags) {
-    __asm__ volatile("pushl %0; popfl" :: "r"(flags) : "memory");
+    __asm__ volatile("pushq %0; popfq" :: "r"(flags) : "memory");
 }
 
 #endif //IO_H

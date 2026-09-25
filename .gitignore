@@ -5,3 +5,6 @@ compile_commands.json
 *.a
 *.o
 *build/
+
+freestanding.txt 
+# file just for me. list of freestanding libs.

@@ -5,27 +5,23 @@
 ; = CREATE STACK AND WAAAAAAAIT ------------- =
 ; =============================================
 
-[BITS 32]
+[BITS 64]
 [GLOBAL _start]
 [EXTERN kmain]
 
-section .text.entry
+[section .text.entry]
 _start:
-    mov esp, 0x90000
-    mov ebp, esp
+    xor ebp, ebp
+    mov rdx, rdi
 
-    cld
-
-    extern __bss_start
-    extern __bss_end
-    mov edi, __bss_start
-    mov ecx, __bss_end
-    sub ecx, edi
+    lea rdi, [rel __bss_start]
+    lea rcx, [rel __bss_end]
+    sub rcx, rdi
     xor eax, eax
     rep stosb
 
+    mov rdi, rdx
     call kmain
-
 hang:
     cli
     hlt

@@ -5,7 +5,7 @@
 ; = ------------------------ dispather =
 ; ======================================
 
-[BITS 32]
+[BITS 64]
 
 [EXTERN isr_dispatcher]
 [GLOBAL isr_stub_table]

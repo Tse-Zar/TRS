@@ -3,20 +3,25 @@
     = TSEZAR TSEZAR TSEZAR TSEZAR TSEZAR =
     ======================================
     = Tsezar Real Secuirity OS - Kernel  =
-    = -------------------------- v 0.0.1 =
+    = -------------------------- v 0.0.3 =
     ======================================
 */
 
-#include "pic.h"
-#include "stream.h"
-#include "version.h"
+#include <pic.h>
+#include <stream.h>
+#include <version.h>
 #include <idt.h>
 #include <keyboard.h>
 #include <vga.h>
 #include <memory_pagging.h>
+#include <bootinfo.h>
+#include <string.h>
 
-void kmain(void) {
-    /* inits */
+void kmain(boot_info_t* bi) {
+    boot_info_t _boot; 
+    memcpy(&_boot, bi, sizeof(boot_info_t));
+    
+    /* --- inits --- */
     dsp_init();
     dsp_set_color(_LIGHT_GREEN, _BLACK);
     dsp_print("Display initialized. [+]\n");
