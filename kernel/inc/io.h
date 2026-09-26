@@ -14,13 +14,13 @@ static inline void outb(unsigned short port, unsigned char byte) {
 
 static inline void io_wait(void) { outb(0x80, 0); }
 
-static inline unsigned irq_save(void) {
-    unsigned flags;
+static inline unsigned long irq_save(void) {
+    unsigned long flags;
     __asm__ volatile("pushfq; popq %0; cli" : "=r"(flags) :: "memory");
     return flags;
 }
 
-static inline void irq_restore(unsigned flags) {
+static inline void irq_restore(unsigned long flags) {
     __asm__ volatile("pushq %0; popfq" :: "r"(flags) : "memory");
 }
 

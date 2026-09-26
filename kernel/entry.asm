@@ -8,12 +8,16 @@
 [BITS 64]
 [GLOBAL _start]
 [EXTERN kmain]
+[extern __bss_start]
+[extern __bss_end]
+
 
 [section .text.entry]
 _start:
     xor ebp, ebp
     mov rdx, rdi
-
+    
+    cld
     lea rdi, [rel __bss_start]
     lea rcx, [rel __bss_end]
     sub rcx, rdi
@@ -25,4 +29,4 @@ _start:
 hang:
     cli
     hlt
-    jmp hang
+    jmp near hang
