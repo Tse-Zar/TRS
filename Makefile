@@ -56,7 +56,7 @@ BLDFLAGS := -nostdlib -shared -Bsymbolic -znocombreloc -T $(EFILDS)
 # ---------------- disk layout ----------------
 BUILD   := build
 DISK    := $(BUILD)/trs.img
-DISK_SZ := 256M
+DISK_SZ := 258M
 ESP_IMG := $(BUILD)/esp.img
 ESP_KB  := 262144 
 ESP_OFF := 1M
@@ -77,11 +77,15 @@ DIRS := $(BUILD) $(BUILD)/boot
 
 # ---------------- targets ----------------
 .PHONY: all kernel boot disk run debug clean
+.SECONDARY: $(KOBJ) $(BOBJ)
 all: disk
 
 kernel: $(KERNELBIN)
 boot:   $(BOOT_EFI)
 disk:   $(DISK)
+
+
+ld -r -b binary -o build/terminus.o ter-v16n.psf
 
 # --- common object rules ---
 $(DIRS):
@@ -96,12 +100,14 @@ $(BUILD)/%.o: %.asm | $(DIRS)
 	$(NASM) -f elf64 $< -o $@
 
 # --- kernel: ELF -> flat binary ---
-# $(KERNEL): $(KOBJ) kernel/linker.ld | $(DIRS)
-#	@echo "[kernel] linked: $@"
+# --- kernel: ELF -> flat binary ---
+$(KERNEL): $(KOBJ) kernel/linker.ld | $(DIRS)
+	$(LD) $(KLDFLAGS) $(KOBJ) -o $@
+	@echo "[kernel] linked: $@"
 
-#$(KERNELBIN): $(KERNEL)
-#	$(OBJCOPY) -O binary $< $@
-#	@echo "[kernel] flat binary: $@ ($$(stat -c%s $@) bytes)"
+$(KERNELBIN): $(KERNEL)
+	$(OBJCOPY) -O binary $< $@
+	@echo "[kernel] flat binary: $@ ($$(stat -c%s $@) bytes)"
 
 # --- uefi boot: ELF -> PE32+ .EFI ---
 $(BOBJ): bootloader/uefi/boot.c | $(DIRS)
@@ -119,17 +125,17 @@ $(BOOT_EFI): $(BOOT_ELF)
 	@echo "[boot] $@"
 
 # --- GPT disk with FAT32 ESP ---
-$(DISK): $(BOOT_EFI) #$(KERNELBIN)
+$(DISK): $(BOOT_EFI) $(KERNELBIN)
 	@echo "[disk] GPT + FAT32 ESP -> $@"
 	rm -f $(ESP_IMG)
 	$(MKFAT) -F32 -C $(ESP_IMG) $(ESP_KB)
 	$(TRUNC) -s $(DISK_SZ) $(DISK)
 	$(PARTED) -s $(DISK) mklabel gpt
-	$(PARTED) -s $(DISK) mkpart ESP fat32 1MiB 65MiB
+	$(PARTED) -s $(DISK) mkpart ESP fat32 1MiB 257MiB
 	$(PARTED) -s $(DISK) set 1 esp on
 	$(MMD) -i $(ESP_IMG) ::/EFI ::/EFI/BOOT
 	$(MCOPY) -i $(ESP_IMG) $(BOOT_EFI) ::/EFI/BOOT/BOOTX64.EFI
-#	$(MCOPY) -i $(ESP_IMG) $(KERNELBIN) ::/kernel.bin
+	$(MCOPY) -i $(ESP_IMG) $(KERNELBIN) ::/kernel.bin
 	$(DD) if=$(ESP_IMG) of=$(DISK) bs=$(ESP_OFF) seek=1 conv=notrunc status=none
 	@echo "[disk] done: $@"
 
@@ -149,7 +155,7 @@ debug: $(DISK) $(RUN_VARS)
 	$(QEMU) -m 512M -serial stdio -s -S $(RUN_FLAGS) -drive format=raw,media=disk,file=$(DISK)
 
 # --- deps & clean ---
-#-include $(KOBJ:.o=.d) $(BOBJ:.o=.d)
+-include $(KOBJ:.o=.d) $(BOBJ:.o=.d)
 
 clean:
 	rm -rf $(BUILD)

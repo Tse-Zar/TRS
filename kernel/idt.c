@@ -8,12 +8,11 @@
 
 #include <idt.h>
 #include <pic.h>
-#include <vga.h>
 #include <string.h>
 #include <io.h>
 
 #define IDR_ENTRIES     256
-#define KERNEL_CS       0x08
+#define KERNEL_CS       0x38
 #define IDT_FLAGS_RINGO 0x8E
 
 typedef struct {
@@ -21,12 +20,14 @@ typedef struct {
     unsigned short selector;
     unsigned char  zero;
     unsigned char  flags;
-    unsigned short  offset_high;
+    unsigned short offset_mid;
+    unsigned int  offset_high;
+    unsigned int reserved;
 } __attribute__((packed)) idt_entry_t;
 
 typedef struct {
     unsigned short limit;
-    unsigned int   base;
+    unsigned long   base;
 } __attribute__((packed)) idt_ptr_t;
 
 static idt_entry_t idt[IDR_ENTRIES];
@@ -49,13 +50,15 @@ static const char* const exc_names[32] = {
 };
 
 static void idt_set_gate(unsigned char num, void* handler) {
-    unsigned int addr = (unsigned int)handler;
+    unsigned long addr = (unsigned long)handler;
 
-    idt[num].offset_low = (unsigned short)(addr & 0xFFFF);
-    idt[num].offset_high = (unsigned short)(addr >> 16);
-    idt[num].selector = KERNEL_CS;
-    idt[num].zero = 0;
-    idt[num].flags = IDT_FLAGS_RINGO;
+    idt[num].offset_low  = (unsigned short)(addr & 0xFFFF);
+    idt[num].offset_mid  = (unsigned short)((addr >> 16) & 0xFFFF);
+    idt[num].offset_high = (unsigned int)((addr >> 32) & 0xFFFFFFFF);
+    idt[num].selector    = KERNEL_CS;
+    idt[num].zero        = 0;
+    idt[num].flags       = IDT_FLAGS_RINGO;
+    idt[num].reserved    = 0;
 }
 
 void isr_install(unsigned char vector, isr_handler_t handler) {
@@ -66,36 +69,13 @@ void irq_install(unsigned char irq, isr_handler_t handler) {
     if(irq < 16) irq_handlers[irq] = handler;
 }
 
-static void exc_panic(_regs_t* r) {
-    const char* name = exc_names[r->int_no];
-
-    dsp_set_color(_WHITE, _RED);
-    dsp_print("\n\n*** KERNEL PANIC ***\nException: ");
-    dsp_print(name);
-    dsp_print("\n");
-
-    dsp_print("int=");
-    dsp_print_hex(r->int_no);
-    dsp_print(" err=");
-    dsp_print_hex(r->err_code);
-    dsp_print(" eip=");
-    dsp_print_hex(r->eip);
-    dsp_print(" cs =");
-    dsp_print_hex(r->cs);
-    dsp_print(" eflags=");
-    dsp_print_hex(r->eflags);
-    dsp_print("\nSystem halted.\n");
-
-    while(1) __asm__ volatile("cli; hlt"); 
-}
-
 void isr_dispatcher(_regs_t *reg) {
     if(reg->int_no < 32) {
         if(isr_handlers[reg->int_no]) {
             isr_handlers[reg->int_no]();
             return;
         }
-        exc_panic(reg);
+        //exc_panic(reg);
         return;
     }
 
@@ -114,9 +94,9 @@ void idt_init(void) {
     memset((void*)irq_handlers, 0, sizeof(irq_handlers));
 
     idt_ptr.limit = sizeof(idt) - 1;
-    idt_ptr.base  = (unsigned int)idt;
+    idt_ptr.base  = (unsigned long)idt;
 
-    for(unsigned i = 0; i < 48; ++i) {
+    for(unsigned i = 0; i < 256; ++i) {
         idt_set_gate((unsigned char)i, isr_stub_table[i]);
     }
 

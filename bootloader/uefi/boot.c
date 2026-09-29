@@ -1,8 +1,14 @@
+/*
+    ======================================
+    = TSEZAR TSEZAR TSEZAR TSEZAR TSEZAR =
+    = ---------------------------------- =
+    = UEFI Bootloader for TRS ---------- =
+    ======================================
+*/
+
 #include <efi.h>
 #include <efilib.h>
 #include <bootinfo.h>
-
-typedef void (*kernel_entry_t)(boot_info_t* bi);
 
 #define KERNEL_ADDR 0x100000
 static EFI_HANDLE _imagehandle;
@@ -11,6 +17,15 @@ static boot_info_t _bootinfo;
 static EFI_GUID img_guid = EFI_LOADED_IMAGE_PROTOCOL_GUID;
 static EFI_GUID sfs_guid = EFI_SIMPLE_FILE_SYSTEM_PROTOCOL_GUID;
 static EFI_GUID gop_guid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
+
+static unsigned int popcnt(unsigned v) {
+    unsigned int n = 0;
+    while(v) {
+        n += v & 1;
+        v >>= 1;
+    }
+    return n;
+}
 
 static void fatal(const char* msg) {
     Print(u"\r\n<< UEFI FATAL >> %s\r\n", msg);
@@ -31,7 +46,7 @@ static UINTN read_kernel(EFI_FILE* root) {
 
     UINTN pages = (size + 0xFFF) / 0x1000 + 64;
     EFI_PHYSICAL_ADDRESS addr = KERNEL_ADDR;
-    if(uefi_call_wrapper(BS->AllocatePages, 4,AllocateAddress, EfiLoaderData, pages, &addr) != EFI_SUCCESS) {
+    if(uefi_call_wrapper(BS->AllocatePages, 4,AllocateAddress, EfiLoaderCode, pages, &addr) != EFI_SUCCESS) {
         fatal("AllocatePool fail.");
     } 
     if(uefi_call_wrapper(file->Read, 3, file, &size, (void*)(UINTN)KERNEL_ADDR) != EFI_SUCCESS) {
@@ -48,12 +63,50 @@ static void init_framebuf(void) {
     if(uefi_call_wrapper(BS->LocateProtocol, 3, &gop_guid, NULL, (void**)&gop) != EFI_SUCCESS || !gop)
         fatal("framebuffer intialization.");
 
-   _bootinfo.framebuf_addr   = gop->Mode->FrameBufferBase;
-   _bootinfo.framebuf_size   = gop->Mode->FrameBufferSize;
-   _bootinfo.framebuf_height = gop->Mode->Info->VerticalResolution;
-   _bootinfo.framebuf_width  = gop->Mode->Info->HorizontalResolution;
-   _bootinfo.framebuf_bpp    = gop->Mode->Info->PixelFormat;
-   _bootinfo.framebuf_pitch  = gop->Mode->Info->PixelsPerScanLine * 4;
+    UINT32 best = gop->Mode->Mode, bestpx = 0;
+    for(UINT32 i = 0; i < gop->Mode->MaxMode; ++i) {
+        UINTN sz;
+        EFI_GRAPHICS_OUTPUT_MODE_INFORMATION* mi = NULL;
+
+        if(uefi_call_wrapper(gop->QueryMode, 4, gop, i, &sz, &mi) != EFI_SUCCESS)
+            continue;
+
+        UINT32 px = mi->HorizontalResolution * mi->VerticalResolution;
+        if(px > bestpx) {
+            bestpx = px;
+            best = i;
+        }
+        BS->FreePool(mi);
+    }
+    if(best != gop->Mode->Mode)
+        uefi_call_wrapper(gop->SetMode, 2, gop, best);
+
+    EFI_GRAPHICS_OUTPUT_MODE_INFORMATION* mi = gop->Mode->Info;
+    unsigned int rm = mi->PixelInformation.RedMask;
+    unsigned int gm = mi->PixelInformation.GreenMask;
+    unsigned int bm = mi->PixelInformation.BlueMask;
+    unsigned int bits = popcnt(rm) + popcnt(gm) + popcnt(bm);
+
+    if(bits != 32 && bits != 24 && bits != 16) {
+        rm = 0x00FF0000;
+        gm = 0x0000FF00;
+        bm = 0x000000FF;
+        bits = 32;
+    }
+
+    _bootinfo.fb = (framebuf_info_t){
+        .base   = gop->Mode->FrameBufferBase,
+        .size   = gop->Mode->FrameBufferSize,
+        .width  = mi->HorizontalResolution,
+        .height = mi->VerticalResolution,
+        .pitch  = mi->PixelsPerScanLine * (bits / 8),
+        .bpp    = bits,
+        .rmask  = rm, .gmask = gm, .bmask = bm,
+        .reserved_mask = mi->PixelInformation.ReservedMask
+    };
+
+    if(!_bootinfo.fb.base || !_bootinfo.fb.width || !_bootinfo.fb.height)
+        fatal("bad framebuffer.");
 }
 
 static void get_mmaped_end_exit(void) {
@@ -86,7 +139,9 @@ static void get_mmaped_end_exit(void) {
     }
 }
 
-static void __attribute__((noreturn)) kjump(EFI_PHYSICAL_ADDRESS entry, EFI_PHYSICAL_ADDRESS stack, boot_info_t* bi) { 
+static void __attribute__((noreturn)) kjump(EFI_PHYSICAL_ADDRESS entry, EFI_PHYSICAL_ADDRESS stack, boot_info_t* bi) { \
+    register boot_info_t* rdi_bi __asm__ ("%rdi") = bi;
+
     __asm__ volatile ( 
         "cli \n\t"
         "movq %0, %%rsp\n\t"
@@ -94,7 +149,7 @@ static void __attribute__((noreturn)) kjump(EFI_PHYSICAL_ADDRESS entry, EFI_PHYS
         "movq %1, %%rdi\n\t"
         "jmp *%2\n\t"
         : 
-        : "r"(stack), "r"(bi), "r"(entry)
+        : "r"(stack), "r"(rdi_bi), "r"(entry)
         : "memory"
     ); 
     __builtin_unreachable(); 

@@ -14,10 +14,11 @@
 typedef void (*isr_handler_t)(void);
 
 typedef struct {
-    unsigned gs, fs, es, ds;
-    unsigned edi, esi, ebp, esp0, ebx, edx, ecx, eax;
-    unsigned int_no, err_code;
-    unsigned eip, cs, eflags;
+    unsigned long gs, fs, es, ds;
+    unsigned long r8, r9, r10, r11, r12, r13, r14, r15;
+    unsigned long rdi, rsi, rbp, rbx, rdx, rcx, rax;
+    unsigned long int_no, err_code;
+    unsigned long rip, cs, rflags, rsp, ss;
 } _regs_t;
 
 void idt_init(void);

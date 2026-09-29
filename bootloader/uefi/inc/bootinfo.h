@@ -2,12 +2,21 @@
 #define BOOTINFO_H
 
 typedef struct {
-    unsigned long long framebuf_addr;
-    unsigned long long framebuf_size;
-    unsigned int framebuf_width;
-    unsigned int framebuf_height;
-    unsigned int framebuf_pitch;
-    unsigned int framebuf_bpp;
+    unsigned long long base;
+    unsigned long long size;
+    
+    unsigned int width;
+    unsigned int height;
+    unsigned int pitch;
+    unsigned int bpp;
+    unsigned int rmask;
+    unsigned int gmask;
+    unsigned int bmask;
+    unsigned int reserved_mask;
+} framebuf_info_t;
+
+typedef struct {
+    framebuf_info_t fb;
     unsigned long long mmap_addr;
     unsigned long long mmap_size;
     unsigned long long mmap_dsize;
