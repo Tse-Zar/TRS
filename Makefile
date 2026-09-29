@@ -66,11 +66,15 @@ BOOT_ELF  := $(BUILD)/boot.elf
 BOOT_EFI  := $(BUILD)/BOOTX64.EFI
 KERNEL    := $(BUILD)/kernel.elf
 KERNELBIN := $(BUILD)/kernel.bin
+FONT_PSF := ter-v16n.psf
+FONT_OBJ := $(BUILD)/terminus.o
 
 KSRC := $(wildcard kernel/*.c kernel/driver/*.c libc/*.c)
 KASM := $(wildcard kernel/*.asm)
+
 KOBJ := $(patsubst %.c,$(BUILD)/%.o,$(KSRC)) \
-        $(patsubst %.asm,$(BUILD)/%.o,$(KASM))
+        $(patsubst %.asm,$(BUILD)/%.o,$(KASM)) \
+        $(FONT_OBJ)
 BOBJ := $(BUILD)/boot/boot.o
 
 DIRS := $(BUILD) $(BUILD)/boot
@@ -85,7 +89,7 @@ boot:   $(BOOT_EFI)
 disk:   $(DISK)
 
 
-ld -r -b binary -o build/terminus.o ter-v16n.psf
+# ld -r -b binary -o build/terminus.o ter-v16n.psf
 
 # --- common object rules ---
 $(DIRS):
@@ -98,6 +102,10 @@ $(BUILD)/%.o: %.c | $(DIRS)
 $(BUILD)/%.o: %.asm | $(DIRS)
 	@mkdir -p $(dir $@)
 	$(NASM) -f elf64 $< -o $@
+
+$(FONT_OBJ): $(FONT_PSF) | $(DIRS)
+	$(OBJCOPY) -I binary -O elf64-x86-64 -B i386 $< $@
+	@echo "[font] embedded: $< -> $@"
 
 # --- kernel: ELF -> flat binary ---
 # --- kernel: ELF -> flat binary ---
@@ -124,6 +132,8 @@ $(BOOT_EFI): $(BOOT_ELF)
            -O efi-app-x86_64 $< $@
 	@echo "[boot] $@"
 
+
+
 # --- GPT disk with FAT32 ESP ---
 $(DISK): $(BOOT_EFI) $(KERNELBIN)
 	@echo "[disk] GPT + FAT32 ESP -> $@"
@@ -149,7 +159,7 @@ RUN_FLAGS := -drive if=pflash,format=raw,readonly=on,file=$(OVMF_CODE) \
 endif
 
 run: $(DISK) $(RUN_VARS)
-	$(QEMU) -m 512M -serial stdio $(RUN_FLAGS) -drive format=raw,media=disk,file=$(DISK)
+	$(QEMU) -m 512M -serial stdio $(RUN_FLAGS)  -drive format=raw,media=disk,file=$(DISK)
 
 debug: $(DISK) $(RUN_VARS)
 	$(QEMU) -m 512M -serial stdio -s -S $(RUN_FLAGS) -drive format=raw,media=disk,file=$(DISK)

@@ -23,24 +23,24 @@ void kmain(boot_info_t* bi) {
     
     /* --- inits --- */
     dsp_init(_boot.fb);
-    //dsp_set_color();
-    //dsp_print("Display initialized. [+]\n");
+    dsp_set_color(_Sapphire, _Crust);
+    dsp_print(_boot.fb, "Display initialized. [+]\n");
 
     pic_remap(IRQ_BASE);
 
-    //idt_init();
-    //dsp_print("IDT initialized [+]\n");
+    idt_init();
+    dsp_print(_boot.fb, "IDT initialized [+]\n");
     //kb_init();
     //dsp_print("Keyboard intialized. [+]\n");
     //pagging_init();
     //dsp_print("RAM pagging initialized [+]\n");
 
-    //dsp_set_color();
-    //dsp_print("TRS OS v" __TRS_VERSION "\n");
-    //dsp_print("==============\n\n");
+    dsp_set_color(_Flamingo, _Crust);
+    dsp_print(_boot.fb, "TRS OS v" __TRS_VERSION "\n");
+    dsp_print(_boot.fb, "==============\n\n");
 
-    //dsp_set_color();
-    //dsp_print("> [SYSTEM] ready.\n");
+    dsp_set_color(_Green, _Crust);
+    dsp_print(_boot.fb, "> [SYSTEM] ready.\n");
 
     //dsp_print("START TERMINAL..");
     //dsp_set_color();
