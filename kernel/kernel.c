@@ -30,8 +30,8 @@ void kmain(boot_info_t* bi) {
 
     idt_init();
     dsp_print(_boot.fb, "IDT initialized [+]\n");
-    //kb_init();
-    //dsp_print("Keyboard intialized. [+]\n");
+    kb_init();
+    dsp_print(_boot.fb,"Keyboard intialized. [+]\n");
     //pagging_init();
     //dsp_print("RAM pagging initialized [+]\n");
 
@@ -46,10 +46,10 @@ void kmain(boot_info_t* bi) {
     //dsp_set_color();
     //term_init();
     
-    //stream_t* kb = kbd_get_stream();
+    stream_t* kb = kbd_get_stream();
     char c;
     while(1) {
-        //if(stream_try_read(kb, &c, 1) == 1) dsp_putchar(c);
+        if(stream_try_read(kb, &c, 1) == 1) dsp_putchar(_boot.fb, c);
         __asm__ volatile ("hlt");
     }
 }

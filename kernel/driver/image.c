@@ -1,21 +1,29 @@
 #include <image.h>
+#include <stdbool.h>
 
-#define PSF1_MAGIC0 0x36
-#define PSF1_MAGIC1 0x04
+#define PSF2_MAGIC0 0x72
+#define PSF2_MAGIC1 0xb5
+#define PSF2_MAGIC2 0x4a
+#define PSF2_MAGIC3 0x86
 
 typedef struct {
-    unsigned char magic[2];
-    unsigned char mode;
-    unsigned char charsize;
-} psf_header;
+    unsigned int magic;
+    unsigned int version;
+    unsigned int headersize;
+    unsigned int flags;
+    unsigned int length;
+    unsigned int charsize;
+    unsigned int heigth;
+    unsigned int width;
+} __attribute__((packed)) psf_header;
 
 long y = 0, x = 0;
 psf_header* font;
 unsigned int bg = _Crust, fg = _PureWhite;
 
 void dsp_init(framebuf_info_t fb) {
-    extern char _binary_ter_v16n_psf_start[];
-    font = (psf_header*)_binary_ter_v16n_psf_start;
+    extern char _binary_ter_v32b_psf_start[];
+    font = (psf_header*)_binary_ter_v32b_psf_start;
 
     unsigned int* dst = (unsigned int*)fb.base;
     unsigned int total = (fb.pitch / 4) * fb.height;
@@ -26,26 +34,42 @@ void dsp_init(framebuf_info_t fb) {
 
 void dsp_putchar(framebuf_info_t fb, char c) {
     unsigned int* dst = (unsigned int*)fb.base;
+    bool is_b = false;
 
     if(c == '\n') {
-        y += font->charsize;
+        y += font->heigth;
         x = 0;
         return;
     }
     if(c == '\t') {
-        x += 4;
+        x += font->width * 4;
         return;
     }
+    if(c == '\b') {
+        if(x >= font->width) x -= font->width;
+        c = ' ';
+        is_b = true;
+    }
+    unsigned char glyph = (unsigned char)c;
 
-    unsigned char* font_glyphs = (unsigned char*)font + sizeof(psf_header);
-    unsigned char* glyph = font_glyphs + ((unsigned char)c * font->charsize);
-    int height = font->charsize;
+    if(glyph >= font->length) {
+        glyph = '?';
+    }
 
-    for(int i = 0; i < height; ++i) {
-        unsigned char line = glyph[i];
+    unsigned char* font_glyphs = (unsigned char*)font + font->headersize;
+    unsigned int bytes_per_line = font->charsize / font->heigth;
+    unsigned char* glyph_data = font_glyphs + (glyph * font->charsize);
 
-        for(int j = 0; j < 8; ++j) {
-            unsigned int color = (line & (0x80 >> j)) ? fg : bg;
+    for(int i = 0; i < font->heigth; ++i) {
+        unsigned short line = 0;
+        if (bytes_per_line == 1) {
+            line = glyph_data[i];
+        } else if (bytes_per_line == 2) {
+            line = (glyph_data[i * 2] << 8) | glyph_data[i * 2 + 1];
+        }
+
+        for(int j = 0; j < font->width; ++j) {
+            unsigned int color = (line & (0x8000 >> j)) ? fg : bg;
 
             unsigned int screen_x = x + j;
             unsigned int screen_y = y + i;
@@ -55,7 +79,7 @@ void dsp_putchar(framebuf_info_t fb, char c) {
             }
         }
     }
-    x += 8;
+    if(!is_b) x += font->width;
 }
 
 void dsp_print(framebuf_info_t fb, const char *str) {

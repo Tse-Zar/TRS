@@ -24,26 +24,26 @@
 #define _Sky 0x89dceb
 #define _Sapphire 0x74c7ec
 #define _Blue 0x89b4fa
-//Lavender 0xb4befe
-//Text 0xcdd6f4
-//Subtext1 0xbac2de
-//Subtext0 0xa6adc8
-//Overlay2 0x6c7086
-//Overlay1 0x585b70
-//verlay0 0x45475a
-//Surface2 0x313244
-//Surface1 0x43465e
-//Surface0 0x313244
+#define _Lavender 0xb4befe
+#define _Text 0xcdd6f4
+#define _Subtext1 0xbac2de
+#define _Subtext0 0xa6adc8
+#define _Overlay2 0x6c7086
+#define _Overlay1 0x585b70
+#define _Overlay0 0x45475a
+#define _Surface2 0x313244
+#define _Surface1 0x43465e
+#define _Surface0 0x313244
 #define _Base 0x1e1e2e
 #define _Mantle 0x181825
 #define _Crust 0x11111b
 #define _DarkerCrust 0x0b0b10
-// BrightText 0xf5f5f5
+#define BrightText 0xf5f5f5
 #define _PureWhite 0xffffff
-/*  NordPolar1 0x2e3440
-    NordPolar2 0x3b4252
-    NordPolar3 0x4c566a
-*/
+#define _NordPolar1 0x2e3440
+#define _NordPolar2 0x3b4252
+#define _NordPolar3 0x4c566a
+
 void dsp_init(framebuf_info_t fb);
 void dsp_set_color(unsigned int col_fg, unsigned int col_bg);
 void dsp_print(framebuf_info_t fb, const char* str);

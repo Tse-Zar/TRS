@@ -161,6 +161,7 @@ EFIAPI
 efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE* SystemTable) {
     InitializeLib(ImageHandle, SystemTable);
 
+    _imagehandle = ImageHandle;
     /* --- Hello msg --- */
     SystemTable->ConOut->ClearScreen(SystemTable->ConOut);
     Print(u"<< TRS UEFI >>\n");

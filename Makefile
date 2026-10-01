@@ -66,7 +66,7 @@ BOOT_ELF  := $(BUILD)/boot.elf
 BOOT_EFI  := $(BUILD)/BOOTX64.EFI
 KERNEL    := $(BUILD)/kernel.elf
 KERNELBIN := $(BUILD)/kernel.bin
-FONT_PSF := ter-v16n.psf
+FONT_PSF := ter-v32b.psf
 FONT_OBJ := $(BUILD)/terminus.o
 
 KSRC := $(wildcard kernel/*.c kernel/driver/*.c libc/*.c)
@@ -154,15 +154,16 @@ ifneq ($(strip $(OVMF_CODE)),)
 RUN_VARS  := $(BUILD)/OVMF_VARS.fd
 $(RUN_VARS): $(OVMF_VARS_SRC) | $(DIRS)
 	$(CP) $< $@
-RUN_FLAGS := -drive if=pflash,format=raw,readonly=on,file=$(OVMF_CODE) \
+RUN_FLAGS :=  \
+			  -drive if=pflash,format=raw,readonly=on,file=$(OVMF_CODE) \
              -drive if=pflash,format=raw,file=$(RUN_VARS)
 endif
 
 run: $(DISK) $(RUN_VARS)
-	$(QEMU) -m 512M -serial stdio $(RUN_FLAGS)  -drive format=raw,media=disk,file=$(DISK)
+	$(QEMU) -m 512M -vga std -global VGA.xres=1280 -global VGA.yres=720 -display gtk,zoom-to-fit=on $(RUN_FLAGS) -drive format=raw,media=disk,file=$(DISK)
 
 debug: $(DISK) $(RUN_VARS)
-	$(QEMU) -m 512M -serial stdio -s -S $(RUN_FLAGS) -drive format=raw,media=disk,file=$(DISK)
+	GDK_BACKEND=x11 $(QEMU) -m 512M -serial file:qemu.log -s -S -display gtk,zoom-to-fit=off $(RUN_FLAGS) -drive format=raw,media=disk,file=$(DISK)
 
 # --- deps & clean ---
 -include $(KOBJ:.o=.d) $(BOBJ:.o=.d)
