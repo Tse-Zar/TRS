@@ -43,10 +43,12 @@
 #define _NordPolar1 0x2e3440
 #define _NordPolar2 0x3b4252
 #define _NordPolar3 0x4c566a
+#define _Yantar 0xFFBF00
 
-void dsp_init(framebuf_info_t fb);
+void dsp_init(framebuf_info_t frame);
 void dsp_set_color(unsigned int col_fg, unsigned int col_bg);
-void dsp_print(framebuf_info_t fb, const char* str);
-void dsp_putchar(framebuf_info_t fb, char c);
+void dsp_print(const char* str);
+void dsp_putchar( char c);
+void dsp_clear(void);
 
 #endif

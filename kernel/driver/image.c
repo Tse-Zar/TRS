@@ -1,5 +1,6 @@
 #include <image.h>
 #include <stdbool.h>
+#include <string.h>
 
 #define PSF2_MAGIC0 0x72
 #define PSF2_MAGIC1 0xb5
@@ -20,11 +21,28 @@ typedef struct {
 long y = 0, x = 0;
 psf_header* font;
 unsigned int bg = _Crust, fg = _PureWhite;
+framebuf_info_t fb;
 
-void dsp_init(framebuf_info_t fb) {
-    extern char _binary_ter_v32b_psf_start[];
-    font = (psf_header*)_binary_ter_v32b_psf_start;
+static void check_scroll_or_new_line(void) {
+    if(x + font->width > fb.width) {
+        y += font->heigth;
+        x = 0;
+    }
 
+    if(y + font->heigth > fb.height) {
+        unsigned int* dst = (unsigned int*)fb.base;
+        unsigned long long total_fb = fb.height * fb.pitch / 4;
+        unsigned int line = font->heigth * fb.pitch / 4;
+        memmove(dst, ((unsigned int*)fb.base + line), (total_fb - line) * sizeof(unsigned int));
+        
+        for(int i = 1; i < line; ++i) {
+            dst[total_fb - i] = bg;
+        }
+        y -= font->heigth;
+        x = 0;
+    }
+}
+void dsp_clear(void) {
     unsigned int* dst = (unsigned int*)fb.base;
     unsigned int total = (fb.pitch / 4) * fb.height;
     for(int i = 0; i < total; ++i) {
@@ -32,9 +50,19 @@ void dsp_init(framebuf_info_t fb) {
     }
 }
 
-void dsp_putchar(framebuf_info_t fb, char c) {
+void dsp_init(framebuf_info_t framebuffer) {
+    extern char _binary_ter_v32b_psf_start[];
+    font = (psf_header*)_binary_ter_v32b_psf_start;
+    fb = framebuffer;
+
+    dsp_clear();    
+}
+
+void dsp_putchar(char c) {
     unsigned int* dst = (unsigned int*)fb.base;
     bool is_b = false;
+
+    check_scroll_or_new_line();
 
     if(c == '\n') {
         y += font->heigth;
@@ -50,6 +78,11 @@ void dsp_putchar(framebuf_info_t fb, char c) {
         c = ' ';
         is_b = true;
     }
+    if(c == '\r') {
+        x = 0;
+        return;
+    }
+
     unsigned char glyph = (unsigned char)c;
 
     if(glyph >= font->length) {
@@ -82,9 +115,9 @@ void dsp_putchar(framebuf_info_t fb, char c) {
     if(!is_b) x += font->width;
 }
 
-void dsp_print(framebuf_info_t fb, const char *str) {
+void dsp_print(const char *str) {
     while(*str) {
-        dsp_putchar(fb, *str);
+        dsp_putchar(*str);
         str++;
     }
 }

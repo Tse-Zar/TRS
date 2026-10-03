@@ -3,7 +3,7 @@
 
 #include <std.h>
 
-#define STREAM_BUFFER_SIZE 256
+#define STREAM_BUFFER_SIZE 4096
 
 typedef struct {
     unsigned char buf[STREAM_BUFFER_SIZE];
