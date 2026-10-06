@@ -10,7 +10,7 @@
 #include <efilib.h>
 #include <bootinfo.h>
 
-#define KERNEL_ADDR 0x100000
+#define KERNEL_ADDR 0xFFFFFFFF80000000
 static EFI_HANDLE _imagehandle;
 static boot_info_t _bootinfo; 
 
@@ -28,7 +28,7 @@ static unsigned int popcnt(unsigned v) {
 }
 
 static void fatal(const char* msg) {
-    Print(u"\r\n<< UEFI FATAL >> %s\r\n", msg);
+    Print(L"\r\n<< UEFI FATAL >> %a\r\n", (CHAR8*)msg);
     while(1) __asm__ volatile("hlt");
 }
 
@@ -45,11 +45,11 @@ static UINTN read_kernel(EFI_FILE* root) {
     uefi_call_wrapper(file->SetPosition, 2, file, 0);
 
     UINTN pages = (size + 0xFFF) / 0x1000 + 64;
-    EFI_PHYSICAL_ADDRESS addr = KERNEL_ADDR;
-    if(uefi_call_wrapper(BS->AllocatePages, 4,AllocateAddress, EfiLoaderCode, pages, &addr) != EFI_SUCCESS) {
+    EFI_PHYSICAL_ADDRESS addr = 0xFFFFFFFF;
+    if(uefi_call_wrapper(BS->AllocatePages, 4, AllocateMaxAddress, EfiLoaderCode, pages, &addr) != EFI_SUCCESS) {
         fatal("AllocatePool fail.");
     } 
-    if(uefi_call_wrapper(file->Read, 3, file, &size, (void*)(UINTN)KERNEL_ADDR) != EFI_SUCCESS) {
+    if(uefi_call_wrapper(file->Read, 3, file, &size, (void*)(UINTN)addr) != EFI_SUCCESS) {
         fatal("file read error.");
     }
 
@@ -120,22 +120,21 @@ static void get_mmaped_end_exit(void) {
 
         EFI_STATUS es = uefi_call_wrapper(BS->GetMemoryMap, 5, &msize, ds, &mkey, &dsize, &dver);
         if(es == EFI_BUFFER_TOO_SMALL) {
-            msize += 0x2000;
             continue;
         }
         if(es != EFI_SUCCESS) {
             fatal("memory mapping.");
         }
 
-        _bootinfo.mmap_dsize = dsize;
-        _bootinfo.mmap_size  = msize;
-        _bootinfo.mmap_addr  = (unsigned long long)(UINTN)ds;
-
         if(uefi_call_wrapper(BS->ExitBootServices, 2, _imagehandle, mkey) == EFI_SUCCESS) {
+            _bootinfo.mmap_dsize = dsize;
+            _bootinfo.mmap_size  = msize;
+            _bootinfo.mmap_addr  = (unsigned long long)(UINTN)ds;
             return;
         }
 
-        msize += 0x2000;
+        uefi_call_wrapper(BS->FreePool, 1, ds);
+        msize += 2 * dsize;
     }
 }
 

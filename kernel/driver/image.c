@@ -7,6 +7,7 @@
 #define PSF2_MAGIC2 0x4a
 #define PSF2_MAGIC3 0x86
 
+//static unsigned char back_buffer[];
 typedef struct {
     unsigned int magic;
     unsigned int version;
@@ -22,6 +23,7 @@ long y = 0, x = 0;
 psf_header* font;
 unsigned int bg = _Crust, fg = _PureWhite;
 framebuf_info_t fb;
+unsigned int* back_buffer = NULL;
 
 static void check_scroll_or_new_line(void) {
     if(x + font->width > fb.width) {
@@ -54,6 +56,7 @@ void dsp_init(framebuf_info_t framebuffer) {
     extern char _binary_ter_v32b_psf_start[];
     font = (psf_header*)_binary_ter_v32b_psf_start;
     fb = framebuffer;
+    
 
     dsp_clear();    
 }

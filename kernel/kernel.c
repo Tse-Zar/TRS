@@ -16,10 +16,13 @@
 #include <memory_pagging.h>
 #include <bootinfo.h>
 #include <string.h>
+#include <cpu.h>
 
 void kmain(boot_info_t* bi) {
     boot_info_t _boot; 
     memcpy(&_boot, bi, sizeof(boot_info_t));
+
+    gdt_init();
     
     /* --- inits --- */
     dsp_init(_boot.fb);
@@ -32,21 +35,18 @@ void kmain(boot_info_t* bi) {
     dsp_print("IDT initialized [+]\n");
     kb_init();
     dsp_print("Keyboard intialized. [+]\n");
-    //pagging_init();
-    //dsp_print("RAM pagging initialized [+]\n");
+   // pmm_init(_boot);
+    dsp_print("RAM pagging initialized [+]\n");
 
-    dsp_set_color(_Flamingo, _Crust);
+    dsp_set_color(_Sapphire, _Crust);
     dsp_print("TRS OS v" __TRS_VERSION "\n");
     dsp_print("==============\n\n");
-
-    dsp_set_color(_Green, _Crust);
     dsp_print("> [SYSTEM] ready.\n");
 
     dsp_set_color(_Yantar, _Crust);
-    //dsp_print("START TERMINAL..");
-    //dsp_set_color();
-    //term_init();
+    dsp_print("START TERMINAL..");
     
+   //start_process("space/sys/term.pro");
     stream_t* kb = kbd_get_stream();
     char c;
     while(1) {
