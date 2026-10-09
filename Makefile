@@ -41,7 +41,7 @@ OVMF_VARS_SRC := $(firstword $(wildcard \
 # ---------------- kernel flags ----------------
 KINC    := -Ikernel/inc -Ilibc/inc -Ibootloader/uefi/inc
 KCFLAGS := -ffreestanding -m64 -mno-red-zone -mno-mmx -mno-sse -mno-sse2 \
-           -mcmodel=kernel -fno-pie -fno-stack-protector \
+           -mcmodel=small -fno-pie -fno-stack-protector \
            -fno-asynchronous-unwind-tables -fno-omit-frame-pointer \
            -O2 -g -Wall -Wextra -MMD -MP $(KINC)
 KLDFLAGS := -nostdlib -z max-page-size=0x1000 -T kernel/linker.ld
@@ -164,6 +164,9 @@ run: $(DISK) $(RUN_VARS)
 
 debug: $(DISK) $(RUN_VARS)
 	GDK_BACKEND=x11 $(QEMU) -m 4G -serial file:qemu.log -s -S -display gtk,zoom-to-fit=off $(RUN_FLAGS) -drive format=raw,media=disk,file=$(DISK)
+
+log: $(DISK) $(RUN_VARS)
+	GDK_BACKEND=x11 $(QEMU) -m 4G -serial file:qemu.log -display gtk,zoom-to-fit=off $(RUN_FLAGS) -drive format=raw,media=disk,file=$(DISK)
 
 # --- deps & clean ---
 -include $(KOBJ:.o=.d) $(BOBJ:.o=.d)

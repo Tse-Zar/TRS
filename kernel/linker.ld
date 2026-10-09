@@ -2,7 +2,7 @@ ENTRY(_start)
 
 SECTIONS
 {
-    . = 0xFFFFFFFF80000000;
+    . = 0x100000;
     __kernel_start = .;
     
     .text : { *(.text.entry) *(.text) *(.text.*) }

@@ -10,7 +10,7 @@
 #include <efilib.h>
 #include <bootinfo.h>
 
-#define KERNEL_ADDR 0xFFFFFFFF80000000
+#define KERNEL_ADDR 0x100000
 static EFI_HANDLE _imagehandle;
 static boot_info_t _bootinfo; 
 
@@ -45,7 +45,7 @@ static UINTN read_kernel(EFI_FILE* root) {
     uefi_call_wrapper(file->SetPosition, 2, file, 0);
 
     UINTN pages = (size + 0xFFF) / 0x1000 + 64;
-    EFI_PHYSICAL_ADDRESS addr = 0xFFFFFFFF;
+    EFI_PHYSICAL_ADDRESS addr = KERNEL_ADDR;
     if(uefi_call_wrapper(BS->AllocatePages, 4, AllocateMaxAddress, EfiLoaderCode, pages, &addr) != EFI_SUCCESS) {
         fatal("AllocatePool fail.");
     } 

@@ -12,7 +12,7 @@
 #include <io.h>
 
 #define IDR_ENTRIES     256
-#define KERNEL_CS       0x38
+#define KERNEL_CS       0x08
 #define IDT_FLAGS_RINGO 0x8E
 
 typedef struct {

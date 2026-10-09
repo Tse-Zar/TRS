@@ -22,7 +22,7 @@ void kmain(boot_info_t* bi) {
     boot_info_t _boot; 
     memcpy(&_boot, bi, sizeof(boot_info_t));
 
-    gdt_init();
+    //gdt_init();
     
     /* --- inits --- */
     dsp_init(_boot.fb);
@@ -33,9 +33,9 @@ void kmain(boot_info_t* bi) {
 
     idt_init();
     dsp_print("IDT initialized [+]\n");
-    kb_init();
+    //kb_init();
     dsp_print("Keyboard intialized. [+]\n");
-   // pmm_init(_boot);
+    //pmm_init(_boot);
     dsp_print("RAM pagging initialized [+]\n");
 
     dsp_set_color(_Sapphire, _Crust);

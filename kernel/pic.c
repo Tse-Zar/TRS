@@ -13,7 +13,7 @@ void pic_remap(unsigned char off) {
     outb(PIC1_DATA, 0x01);    io_wait();
     outb(PIC2_DATA, 0x01);    io_wait();
 
-    outb(PIC1_DATA, 0xFB);
+    outb(PIC1_DATA, 0xFF);
     outb(PIC2_DATA, 0xFF);
 
     irq_restore(flags);

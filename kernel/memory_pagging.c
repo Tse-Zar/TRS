@@ -5,7 +5,7 @@
 #define PAGE_PRESENT (1ULL << 0)
 #define PAGE_WRITABLE (1ULL << 1)
 #define PAGE_ADDR_MASK 0x000FFFFFFFFFF000ULL
-
+/*
 static unsigned long long* get_next_table(unsigned long long* cur, unsigned int idx, unsigned long long flg) {
     unsigned long long entry = cur[idx];
 
@@ -48,7 +48,7 @@ void vmm_map_page(unsigned long long *pml4, unsigned long long vaddr, unsigned l
 
     __asm__ volatile("invlpg (%0)" :: "r"(vaddr) : "memory");
 }
-
+*/
 void pmm_init(boot_info_t info) {
     unsigned long long total_size = info.mmap_size;
     
