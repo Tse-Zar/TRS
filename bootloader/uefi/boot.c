@@ -28,7 +28,7 @@ static unsigned int popcnt(unsigned v) {
 }
 
 static void fatal(const char* msg) {
-    Print(u"\r\n<< UEFI FATAL >> %s\r\n", msg);
+    Print(u"\r\n<< UEFI FATAL >> %a\r\n", msg);
     while(1) __asm__ volatile("hlt");
 }
 
@@ -47,7 +47,7 @@ static UINTN read_kernel(EFI_FILE* root) {
     UINTN pages = (size + 0xFFF) / 0x1000 + 64;
     EFI_PHYSICAL_ADDRESS addr = KERNEL_ADDR;
     if(uefi_call_wrapper(BS->AllocatePages, 4,AllocateAddress, EfiLoaderCode, pages, &addr) != EFI_SUCCESS) {
-        fatal("AllocatePool fail.");
+        fatal("Allocate fail.");
     } 
     if(uefi_call_wrapper(file->Read, 3, file, &size, (void*)(UINTN)KERNEL_ADDR) != EFI_SUCCESS) {
         fatal("file read error.");
@@ -76,31 +76,44 @@ static void init_framebuf(void) {
             bestpx = px;
             best = i;
         }
-        BS->FreePool(mi);
+        uefi_call_wrapper(BS->FreePool, 1, mi);
     }
     if(best != gop->Mode->Mode)
         uefi_call_wrapper(gop->SetMode, 2, gop, best);
 
     EFI_GRAPHICS_OUTPUT_MODE_INFORMATION* mi = gop->Mode->Info;
-    unsigned int rm = mi->PixelInformation.RedMask;
-    unsigned int gm = mi->PixelInformation.GreenMask;
-    unsigned int bm = mi->PixelInformation.BlueMask;
-    unsigned int bits = popcnt(rm) + popcnt(gm) + popcnt(bm);
-
-    if(bits != 32 && bits != 24 && bits != 16) {
-        rm = 0x00FF0000;
-        gm = 0x0000FF00;
-        bm = 0x000000FF;
-        bits = 32;
+    unsigned int rm;
+    unsigned int gm;
+    unsigned int bm;
+    switch (mi->PixelFormat) {
+        case PixelRedGreenBlueReserved8BitPerColor: 
+            rm = 0xFF0000;
+            gm = 0x00FF00;
+            bm = 0x0000FF;
+            break;
+        case PixelBlueGreenRedReserved8BitPerColor:
+            rm = 0x0000FF;
+            gm = 0x00FF00;
+            bm = 0xFF0000;
+            break;
+        case PixelBitMask:
+            rm = mi->PixelInformation.RedMask;
+            gm = mi->PixelInformation.GreenMask;
+            bm = mi->PixelInformation.BlueMask;
+            break;
+        default:
+            fatal("no linear framebufer");
     }
+
+    unsigned int bits = popcnt(rm) + popcnt(gm) + popcnt(bm);
 
     _bootinfo.fb = (framebuf_info_t){
         .base   = gop->Mode->FrameBufferBase,
         .size   = gop->Mode->FrameBufferSize,
         .width  = mi->HorizontalResolution,
         .height = mi->VerticalResolution,
-        .pitch  = mi->PixelsPerScanLine * (bits / 8),
-        .bpp    = bits,
+        .pitch  = mi->PixelsPerScanLine * 4,
+        .bpp    = 32,
         .rmask  = rm, .gmask = gm, .bmask = bm,
         .reserved_mask = mi->PixelInformation.ReservedMask
     };
@@ -163,7 +176,7 @@ efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE* SystemTable) {
 
     _imagehandle = ImageHandle;
     /* --- Hello msg --- */
-    SystemTable->ConOut->ClearScreen(SystemTable->ConOut);
+    uefi_call_wrapper(SystemTable->ConOut->ClearScreen, 1, SystemTable->ConOut);
     Print(u"<< TRS UEFI >>\n");
 
     EFI_LOADED_IMAGE* li;
@@ -174,7 +187,7 @@ efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE* SystemTable) {
     uefi_call_wrapper(fs->OpenVolume, 2, fs, &root);
 
     UINTN k_size = read_kernel(root);
-    Print(L"Kernel loaded to 0x100000 (%d bytes)", k_size);
+    Print(L"Kernel loaded to 0x100000 (%ld bytes)", k_size);
 
     init_framebuf();
 

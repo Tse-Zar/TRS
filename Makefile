@@ -37,18 +37,19 @@ OVMF_VARS_SRC := $(firstword $(wildcard \
                 /usr/share/ovmf/x64/OVMF_VARS.fd \
                 $(subst OVMF_CODE,OVMF_VARS,$(OVMF_CODE))))
 
-
 # ---------------- kernel flags ----------------
 KINC    := -Ikernel/inc -Ilibc/inc -Ibootloader/uefi/inc
 KCFLAGS := -ffreestanding -m64 -mno-red-zone -mno-mmx -mno-sse -mno-sse2 \
            -mcmodel=small -fno-pie -fno-stack-protector \
            -fno-asynchronous-unwind-tables -fno-omit-frame-pointer \
+		   -fcf-protection=none \
            -O2 -g -Wall -Wextra -MMD -MP $(KINC)
 KLDFLAGS := -nostdlib -z max-page-size=0x1000 -T kernel/linker.ld
 
 # ---------------- uefi loader flags ----------------
 BCFLAGS := -ffreestanding -m64 -mno-red-zone -DEFI_FUNCTION_WRAPPER \
            -fPIC -fshort-wchar -fno-stack-protector -fno-strict-aliasing \
+		   -fcf-protection=none \
            -fno-asynchronous-unwind-tables -Wall -MMD -MP \
            -I$(EFIINC) -I$(EFIINC)/x86_64 -Ibootloader/uefi/inc
 BLDFLAGS := -nostdlib -shared -Bsymbolic -znocombreloc -T $(EFILDS)
@@ -56,9 +57,9 @@ BLDFLAGS := -nostdlib -shared -Bsymbolic -znocombreloc -T $(EFILDS)
 # ---------------- disk layout ----------------
 BUILD   := build
 DISK    := $(BUILD)/trs.img
-DISK_SZ := 258M
+DISK_SZ := 64M
 ESP_IMG := $(BUILD)/esp.img
-ESP_KB  := 262144 
+ESP_KB  := 65536 
 ESP_OFF := 1M
 
 # ---------------- files ----------------
@@ -88,9 +89,6 @@ kernel: $(KERNELBIN)
 boot:   $(BOOT_EFI)
 disk:   $(DISK)
 
-
-# ld -r -b binary -o build/terminus.o ter-v16n.psf
-
 # --- common object rules ---
 $(DIRS):
 	mkdir -p $@
@@ -107,7 +105,6 @@ $(FONT_OBJ): $(FONT_PSF) | $(DIRS)
 	$(OBJCOPY) -I binary -O elf64-x86-64 -B i386 $< $@
 	@echo "[font] embedded: $< -> $@"
 
-# --- kernel: ELF -> flat binary ---
 # --- kernel: ELF -> flat binary ---
 $(KERNEL): $(KOBJ) kernel/linker.ld | $(DIRS)
 	$(LD) $(KLDFLAGS) $(KOBJ) -o $@
@@ -132,8 +129,6 @@ $(BOOT_EFI): $(BOOT_ELF)
            -O efi-app-x86_64 $< $@
 	@echo "[boot] $@"
 
-
-
 # --- GPT disk with FAT32 ESP ---
 $(DISK): $(BOOT_EFI) $(KERNELBIN)
 	@echo "[disk] GPT + FAT32 ESP -> $@"
@@ -141,7 +136,7 @@ $(DISK): $(BOOT_EFI) $(KERNELBIN)
 	$(MKFAT) -F32 -C $(ESP_IMG) $(ESP_KB)
 	$(TRUNC) -s $(DISK_SZ) $(DISK)
 	$(PARTED) -s $(DISK) mklabel gpt
-	$(PARTED) -s $(DISK) mkpart ESP fat32 1MiB 257MiB
+	$(PARTED) -s $(DISK) mkpart ESP fat32 1MiB 63MiB
 	$(PARTED) -s $(DISK) set 1 esp on
 	$(MMD) -i $(ESP_IMG) ::/EFI ::/EFI/BOOT
 	$(MCOPY) -i $(ESP_IMG) $(BOOT_EFI) ::/EFI/BOOT/BOOTX64.EFI
@@ -163,7 +158,7 @@ run: $(DISK) $(RUN_VARS)
 	$(QEMU) -m 512M -vga std -global VGA.xres=1280 -global VGA.yres=720 -display gtk,zoom-to-fit=on $(RUN_FLAGS) -drive format=raw,media=disk,file=$(DISK)
 
 debug: $(DISK) $(RUN_VARS)
-	GDK_BACKEND=x11 $(QEMU) -m 512M -serial file:qemu.log -s -S -display gtk,zoom-to-fit=off $(RUN_FLAGS) -drive format=raw,media=disk,file=$(DISK)
+	GDK_BACKEND=x11 $(QEMU) -m 512M -serial file:qemu.log -no-reboot -no-shutdown -d int,cpu_reset -D qemu.log -s -S -display gtk,zoom-to-fit=off $(RUN_FLAGS) -drive format=raw,media=disk,file=$(DISK)
 
 # --- deps & clean ---
 -include $(KOBJ:.o=.d) $(BOBJ:.o=.d)

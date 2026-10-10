@@ -8,3 +8,4 @@ compile_commands.json
 *.log
 freestanding.txt 
 # file just for me. list of freestanding libs.
+data*

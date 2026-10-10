@@ -53,16 +53,11 @@ void kb_init(void) {
     pic_unmask(1);
 }
 
-static void kb_done(void) {
-    outb(PIC1_CMD, PIC_EOI);
-}
-
 void kb_irq_handler(void) {
     unsigned char sc = inb(KB_DATA_PORT);
 
     if(sc == 0xE0) {
         ext_prefix = 1;
-        kb_done(); 
         return;
     }
     bool release = (sc & 0x80) != 0;
@@ -71,23 +66,20 @@ void kb_irq_handler(void) {
 
     if(code == 0x2A || code == 0x36) {
         shift_down = !release;
-        kb_done();
         return;
     }
     if(code == 0x3A && !release) {
         caps_down = !caps_down;
-        kb_done();
         return;
     }
     if(code == 0x0E && !release) {
         ringbuf_put(&kb_stream.rb, '\b');
-        kb_done();
         return;
     }
 
     if(!release && code < 58 && scancode_map[code][0]) {
-        char c = scancode_map[code][shift_down ? 1 : 0];
-        if(caps_down && c >= 'a' && c <= 'z' && !shift_down) c -= 32;
+        char c = scancode_map[code][shift_down ^ caps_down ? 1 : 0];
+        
 
         if(ringbuf_put(&kb_stream.rb, (unsigned char)c) != 0) {
             kb_stream.overflow++;
@@ -95,6 +87,5 @@ void kb_irq_handler(void) {
     }
     
     ext_prefix = 0;
-    kb_done();
     return;
 }

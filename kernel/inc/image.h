@@ -28,10 +28,10 @@
 #define _Text 0xcdd6f4
 #define _Subtext1 0xbac2de
 #define _Subtext0 0xa6adc8
-#define _Overlay2 0x6c7086
-#define _Overlay1 0x585b70
-#define _Overlay0 0x45475a
-#define _Surface2 0x313244
+#define _Overlay2 0x9399b2
+#define _Overlay1 0x7f849c
+#define _Overlay0 0x6c7086
+#define _Surface2 0x585b70
 #define _Surface1 0x43465e
 #define _Surface0 0x313244
 #define _Base 0x1e1e2e

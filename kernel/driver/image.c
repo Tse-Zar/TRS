@@ -2,10 +2,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define PSF2_MAGIC0 0x72
-#define PSF2_MAGIC1 0xb5
-#define PSF2_MAGIC2 0x4a
-#define PSF2_MAGIC3 0x86
+#define PSF2_MAGIC 0x72B54A86
 
 typedef struct {
     unsigned int magic;
@@ -18,10 +15,10 @@ typedef struct {
     unsigned int width;
 } __attribute__((packed)) psf_header;
 
-long y = 0, x = 0;
-psf_header* font;
-unsigned int bg = _Crust, fg = _PureWhite;
-framebuf_info_t fb;
+static long y = 0, x = 0;
+static psf_header* font;
+unsigned static int bg = _Crust, fg = _PureWhite;
+static volatile framebuf_info_t fb;
 
 static void check_scroll_or_new_line(void) {
     if(x + font->width > fb.width) {
@@ -35,7 +32,7 @@ static void check_scroll_or_new_line(void) {
         unsigned int line = font->heigth * fb.pitch / 4;
         memmove(dst, ((unsigned int*)fb.base + line), (total_fb - line) * sizeof(unsigned int));
         
-        for(int i = 1; i < line; ++i) {
+        for(int i = 1; i <= line; ++i) {
             dst[total_fb - i] = bg;
         }
         y -= font->heigth;
@@ -53,6 +50,7 @@ void dsp_clear(void) {
 void dsp_init(framebuf_info_t framebuffer) {
     extern char _binary_ter_v32b_psf_start[];
     font = (psf_header*)_binary_ter_v32b_psf_start;
+    //if(font->magic != PSF2_MAGIC) return; // kern fatal
     fb = framebuffer;
 
     dsp_clear();    
@@ -123,6 +121,14 @@ void dsp_print(const char *str) {
 }
 
 void dsp_set_color(unsigned int col_fg, unsigned int col_bg) {
-    fg = col_fg;
-    bg = col_bg;
+    unsigned int fg_r = (col_fg & fb.rmask);
+    unsigned int fg_g = (col_fg & fb.gmask);
+    unsigned int fg_b = (col_fg & fb.bmask);
+
+    unsigned int bg_r = (col_bg & fb.rmask);
+    unsigned int bg_g = (col_bg & fb.gmask);
+    unsigned int bg_b = (col_bg & fb.bmask);
+
+    fg = fg_r | fg_g | fg_b;
+    bg = bg_r | bg_g | bg_b;
 }

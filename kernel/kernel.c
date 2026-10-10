@@ -2,7 +2,7 @@
     ======================================
     = TSEZAR TSEZAR TSEZAR TSEZAR TSEZAR =
     ======================================
-    = Tsezar Real Secuirity OS - Kernel  =
+    = Tsezar Relaible System   - Kernel  =
     = -------------------------- v 0.0.3 =
     ======================================
 */
@@ -17,8 +17,9 @@
 #include <bootinfo.h>
 #include <string.h>
 
+boot_info_t _boot;
+
 void kmain(boot_info_t* bi) {
-    boot_info_t _boot; 
     memcpy(&_boot, bi, sizeof(boot_info_t));
     
     /* --- inits --- */
@@ -44,13 +45,16 @@ void kmain(boot_info_t* bi) {
 
     dsp_set_color(_Yantar, _Crust);
     //dsp_print("START TERMINAL..");
-    //dsp_set_color();
-    //term_init();
     
     stream_t* kb = kbd_get_stream();
     char c;
     while(1) {
-        if(stream_try_read(kb, &c, 1) == 1) dsp_putchar(c);
-        __asm__ volatile ("hlt");
+        __asm__ volatile ("cli");
+        if(stream_try_read(kb, &c, 1) == 1) { 
+            __asm__ volatile("sti");
+            dsp_putchar(c);
+            continue;
+        }
+        __asm__ volatile ("sti; hlt");
     }
 }
