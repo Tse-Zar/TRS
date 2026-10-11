@@ -11,6 +11,7 @@
 #include <bootinfo.h>
 
 #define KERNEL_ADDR 0x100000
+#define KERNEL_PATH  L"\\space\\sys\\kern\\kernel.bin"
 static EFI_HANDLE _imagehandle;
 static boot_info_t _bootinfo; 
 
@@ -35,7 +36,7 @@ static void fatal(const char* msg) {
 static UINTN read_kernel(EFI_FILE* root) {
     EFI_FILE* file;
 
-    if(uefi_call_wrapper(root->Open, 5, root, &file, L"\\kernel.bin", EFI_FILE_MODE_READ, 0) != EFI_SUCCESS) {
+    if(uefi_call_wrapper(root->Open, 5, root, &file, KERNEL_PATH, EFI_FILE_MODE_READ, 0) != EFI_SUCCESS) {
         fatal("cannot open kernel.");
     }
 

@@ -17,8 +17,8 @@ typedef struct {
 
 static long y = 0, x = 0;
 static psf_header* font;
-unsigned static int bg = _Crust, fg = _PureWhite;
-static volatile framebuf_info_t fb;
+static unsigned int bg = _Crust, fg = _PureWhite;
+static framebuf_info_t fb;
 
 static void check_scroll_or_new_line(void) {
     if(x + font->width > fb.width) {
