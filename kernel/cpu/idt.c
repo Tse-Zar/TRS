@@ -10,9 +10,9 @@
 #include <pic.h>
 #include <string.h>
 #include <io.h>
+#include <gdt.h>
 
-#define IDR_ENTRIES     256
-#define KERNEL_CS       0x38
+#define IDT_ENTRIES     256
 #define IDT_FLAGS_RINGO 0x8E
 
 typedef struct {
@@ -30,7 +30,7 @@ typedef struct {
     unsigned long   base;
 } __attribute__((packed)) idt_ptr_t;
 
-static idt_entry_t idt[IDR_ENTRIES];
+static idt_entry_t idt[IDT_ENTRIES];
 static idt_ptr_t   idt_ptr;
 
 static isr_handler_t isr_handlers[32];
@@ -49,15 +49,15 @@ static const char* const exc_names[32] = {
     "Reserved", "Reserved", "Reserved", "Reserved"
 };
 
-static void idt_set_gate(unsigned char num, void* handler) {
+static void idt_set_gate(unsigned char num, void* handler, unsigned char ist) {
     unsigned long addr = (unsigned long)handler;
 
     idt[num].offset_low  = (unsigned short)(addr & 0xFFFF);
     idt[num].offset_mid  = (unsigned short)((addr >> 16) & 0xFFFF);
     idt[num].offset_high = (unsigned int)((addr >> 32) & 0xFFFFFFFF);
-    idt[num].selector    = KERNEL_CS;
+    idt[num].selector    = GDT_KERNEL_CODE;
     idt[num].zero        = 0;
-    idt[num].flags       = IDT_FLAGS_RINGO;
+    idt[num].flags       = IDT_FLAGS_RINGO | (ist & 0x0F);
     idt[num].reserved    = 0;
 }
 
@@ -97,7 +97,7 @@ void idt_init(void) {
     idt_ptr.base  = (unsigned long)idt;
 
     for(unsigned i = 0; i < 256; ++i) {
-        idt_set_gate((unsigned char)i, isr_stub_table[i]);
+        idt_set_gate((unsigned char)i, isr_stub_table[i], (i == 8) ? 1 : 0);
     }
 
     __asm__ volatile("lidt %0" :: "m"(idt_ptr));

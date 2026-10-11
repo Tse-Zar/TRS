@@ -11,7 +11,7 @@ typedef struct {
     unsigned int flags;
     unsigned int length;
     unsigned int charsize;
-    unsigned int heigth;
+    unsigned int height;
     unsigned int width;
 } __attribute__((packed)) psf_header;
 
@@ -22,20 +22,20 @@ static volatile framebuf_info_t fb;
 
 static void check_scroll_or_new_line(void) {
     if(x + font->width > fb.width) {
-        y += font->heigth;
+        y += font->height;
         x = 0;
     }
 
-    if(y + font->heigth > fb.height) {
+    if(y + font->height > fb.height) {
         unsigned int* dst = (unsigned int*)fb.base;
         unsigned long long total_fb = fb.height * fb.pitch / 4;
-        unsigned int line = font->heigth * fb.pitch / 4;
+        unsigned int line = font->height * fb.pitch / 4;
         memmove(dst, ((unsigned int*)fb.base + line), (total_fb - line) * sizeof(unsigned int));
         
         for(int i = 1; i <= line; ++i) {
             dst[total_fb - i] = bg;
         }
-        y -= font->heigth;
+        y -= font->height;
         x = 0;
     }
 }
@@ -63,7 +63,7 @@ void dsp_putchar(char c) {
     check_scroll_or_new_line();
 
     if(c == '\n') {
-        y += font->heigth;
+        y += font->height;
         x = 0;
         return;
     }
@@ -88,10 +88,10 @@ void dsp_putchar(char c) {
     }
 
     unsigned char* font_glyphs = (unsigned char*)font + font->headersize;
-    unsigned int bytes_per_line = font->charsize / font->heigth;
+    unsigned int bytes_per_line = font->charsize / font->height;
     unsigned char* glyph_data = font_glyphs + (glyph * font->charsize);
 
-    for(int i = 0; i < font->heigth; ++i) {
+    for(int i = 0; i < font->height; ++i) {
         unsigned short line = 0;
         if (bytes_per_line == 1) {
             line = glyph_data[i];

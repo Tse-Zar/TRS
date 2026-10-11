@@ -113,6 +113,8 @@ int strcmp(const char* a, const char* b) {
 
 
 int strncmp(const char* a, const char* b, size_t len) {
+    if(len == 0) return 0;
+    
     while(len-- && (*a != '\0' && *b != '\0')) {
         if(*a != *b) break;
         a++;

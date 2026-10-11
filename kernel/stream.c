@@ -43,7 +43,7 @@ int stream_read(stream_t* s, void* dst, unsigned len) {
     while(got < len) {
         int n = stream_try_read(s, (char*)dst + got, len - got);
         if(n > 0) got += (unsigned)n;
-        else __asm__ volatile("hlt"); 
+        else __asm__ volatile("sti; hlt"); 
     }
 
     return (int)got;
@@ -56,7 +56,7 @@ int stream_write(stream_t *s, const void *src, unsigned int len) {
     for(unsigned i = 0; i < len; ++i) {
         while(ringbuf_put(&s->rb, p[i]) != 0) {
             s->overflow++;
-            __asm__ volatile("hlt");
+            __asm__ volatile("sti; hlt");
         } 
     }
     return (int)len;

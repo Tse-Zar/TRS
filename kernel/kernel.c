@@ -13,24 +13,25 @@
 #include <idt.h>
 #include <keyboard.h>
 #include <image.h>
-#include <memory_pagging.h>
+#include <memory_paging.h>
 #include <bootinfo.h>
 #include <string.h>
-
+#include <gdt.h>
 boot_info_t _boot;
 
 void kmain(boot_info_t* bi) {
     memcpy(&_boot, bi, sizeof(boot_info_t));
     
     /* --- inits --- */
+    gdt_init();
+    pic_remap(IRQ_BASE);
+    idt_init();
     dsp_init(_boot.fb);
     dsp_set_color(_Sapphire, _Crust);
     dsp_print("Display initialized. [+]\n");
-
-    pic_remap(IRQ_BASE);
-
-    idt_init();
+    dsp_print("GDT initalized [+]\n");
     dsp_print("IDT initialized [+]\n");
+    dsp_print("PIC remaped [+]\n");
     kb_init();
     dsp_print("Keyboard intialized. [+]\n");
     //pagging_init();
@@ -46,6 +47,7 @@ void kmain(boot_info_t* bi) {
     dsp_set_color(_Yantar, _Crust);
     //dsp_print("START TERMINAL..");
     
+    //start_process("space/sys/term.pro")
     stream_t* kb = kbd_get_stream();
     char c;
     while(1) {

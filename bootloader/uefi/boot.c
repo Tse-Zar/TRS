@@ -61,7 +61,7 @@ static UINTN read_kernel(EFI_FILE* root) {
 static void init_framebuf(void) {
     EFI_GRAPHICS_OUTPUT_PROTOCOL* gop = NULL;
     if(uefi_call_wrapper(BS->LocateProtocol, 3, &gop_guid, NULL, (void**)&gop) != EFI_SUCCESS || !gop)
-        fatal("framebuffer intialization.");
+        fatal("framebuffer initialization.");
 
     UINT32 best = gop->Mode->Mode, bestpx = 0;
     for(UINT32 i = 0; i < gop->Mode->MaxMode; ++i) {

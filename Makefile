@@ -70,8 +70,8 @@ KERNELBIN := $(BUILD)/kernel.bin
 FONT_PSF := ter-v32b.psf
 FONT_OBJ := $(BUILD)/terminus.o
 
-KSRC := $(wildcard kernel/*.c kernel/driver/*.c libc/*.c)
-KASM := $(wildcard kernel/*.asm)
+KSRC := $(wildcard kernel/*.c kernel/driver/*.c libc/*.c kernel/cpu/*.c)
+KASM := $(wildcard kernel/*.asm kernel/cpu/*.asm)
 
 KOBJ := $(patsubst %.c,$(BUILD)/%.o,$(KSRC)) \
         $(patsubst %.asm,$(BUILD)/%.o,$(KASM)) \
