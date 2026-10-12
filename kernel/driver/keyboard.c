@@ -53,7 +53,8 @@ void kb_init(void) {
     pic_unmask(1);
 }
 
-void kb_irq_handler(void) {
+void kb_irq_handler(_regs_t* reg) {
+    (void)reg;
     unsigned char sc = inb(KB_DATA_PORT);
 
     if(sc == 0xE0) {
@@ -78,9 +79,12 @@ void kb_irq_handler(void) {
     }
 
     if(!release && code < 58 && scancode_map[code][0]) {
-        char c = scancode_map[code][shift_down ^ caps_down ? 1 : 0];
-        
+        char c = scancode_map[code][shift_down ? 1 : 0];
 
+        if (c - '0' >= 0 && c - '0' <= 9) {
+        } else {
+            c = scancode_map[code][shift_down ^ caps_down ? 1 : 0];
+        }
         if(ringbuf_put(&kb_stream.rb, (unsigned char)c) != 0) {
             kb_stream.overflow++;
         }

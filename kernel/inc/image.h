@@ -38,17 +38,24 @@
 #define _Mantle 0x181825
 #define _Crust 0x11111b
 #define _DarkerCrust 0x0b0b10
-#define BrightText 0xf5f5f5
-#define _PureWhite 0xffffff
+#define _BrightText     0xf5f5f5
+#define _PureWhite      0xffffff
 #define _NordPolar1 0x2e3440
 #define _NordPolar2 0x3b4252
 #define _NordPolar3 0x4c566a
-#define _Yantar 0xFFBF00
+#define _Yantar     0xFFBF00
+
+#define _PanicGraphit 0x121212
+#define _PanicDark    0x1a1a1a
+#define _PanicRed     0xff4444
+#define _PanicOrange  0xff6b00
 
 void dsp_init(framebuf_info_t frame);
 void dsp_set_color(unsigned int col_fg, unsigned int col_bg);
-void dsp_print(const char* str);
-void dsp_putchar( char c);
 void dsp_clear(void);
+
+void dsp_print(const char* str);
+void dsp_putchar(char c);
+void dsp_print_hex(unsigned long long v);
 
 #endif

@@ -11,12 +11,13 @@
 #define KEYBOARD_H
 
 #include <stream.h>
+#include <idt.h>
 
 #define KB_DATA_PORT    0x60
 #define KB_COM_PORT     0x64
 
 void kb_init(void);
-void kb_irq_handler(void);
+void kb_irq_handler(_regs_t* reg);
 stream_t* kbd_get_stream(void);
 
 #endif // KEYBOARD_H

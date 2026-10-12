@@ -10,6 +10,7 @@
 [EXTERN isr_dispatcher]
 [GLOBAL isr_stub_table]
 
+
 %macro ISR_NOERR 1
 isr_stub_%1:
     push qword 0
@@ -40,11 +41,11 @@ ISR_ERR   13
 ISR_ERR   14
 ISR_NOERR 15
 ISR_NOERR 16
-ISR_ERR 17
+ISR_ERR   17
 ISR_NOERR 18
 ISR_NOERR 19
 ISR_NOERR 20
-ISR_ERR 21
+ISR_ERR   21
 ISR_NOERR 22
 ISR_NOERR 23
 ISR_NOERR 24
@@ -52,8 +53,8 @@ ISR_NOERR 25
 ISR_NOERR 26
 ISR_NOERR 27
 ISR_NOERR 28
-ISR_ERR 29
-ISR_ERR 30
+ISR_ERR   29
+ISR_ERR   30
 ISR_NOERR 31
 
 %assign i 32
@@ -79,16 +80,20 @@ isr_common:
     push r9
     push r8
     
-    mov rax, ds
+    xor eax, eax
+    mov ax, ds
     push rax
-    mov rax, es
+    xor eax, eax
+    mov ax, es
     push rax
-    mov rax, fs
+    xor eax, eax
+    mov ax, fs
     push rax
-    mov rax, gs
+    xor eax, eax
+    mov ax, gs
     push rax
 
-
+    cld
     mov rdi, rsp
     mov rbp, rsp
     and rsp, -16
@@ -96,13 +101,13 @@ isr_common:
     mov rsp, rbp
 
     pop rax
-    mov ds, ax
-    pop rax
-    mov es, ax
+    mov gs, ax
     pop rax
     mov fs, ax
     pop rax
-    mov gs, ax
+    mov es, ax
+    pop rax
+    mov ds, ax
 
     pop r8
     pop r9
@@ -131,3 +136,6 @@ isr_stub_table:
     dq isr_stub_%+i
     %assign i i+1
 %endrep
+
+
+[section .note.GNU-stack noalloc noexec nowrite progbits]

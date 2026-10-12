@@ -11,8 +11,6 @@
 
 #define IRQ_BASE    0x20
 
-typedef void (*isr_handler_t)(void);
-
 typedef struct {
     unsigned long gs, fs, es, ds;
     unsigned long r8, r9, r10, r11, r12, r13, r14, r15;
@@ -20,6 +18,8 @@ typedef struct {
     unsigned long int_no, err_code;
     unsigned long rip, cs, rflags, rsp, ss;
 } _regs_t;
+
+typedef void (*isr_handler_t)(_regs_t* reg);
 
 void idt_init(void);
 void irq_install(unsigned char irq, isr_handler_t handler);

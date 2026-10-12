@@ -19,15 +19,6 @@ static EFI_GUID img_guid = EFI_LOADED_IMAGE_PROTOCOL_GUID;
 static EFI_GUID sfs_guid = EFI_SIMPLE_FILE_SYSTEM_PROTOCOL_GUID;
 static EFI_GUID gop_guid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
 
-static unsigned int popcnt(unsigned v) {
-    unsigned int n = 0;
-    while(v) {
-        n += v & 1;
-        v >>= 1;
-    }
-    return n;
-}
-
 static void fatal(const char* msg) {
     Print(u"\r\n<< UEFI FATAL >> %a\r\n", msg);
     while(1) __asm__ volatile("hlt");
@@ -105,8 +96,6 @@ static void init_framebuf(void) {
         default:
             fatal("no linear framebufer");
     }
-
-    unsigned int bits = popcnt(rm) + popcnt(gm) + popcnt(bm);
 
     _bootinfo.fb = (framebuf_info_t){
         .base   = gop->Mode->FrameBufferBase,

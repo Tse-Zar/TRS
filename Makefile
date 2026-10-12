@@ -35,7 +35,7 @@ $(error gnu-efi not found: install the 'gnu-efi' package (crt0-efi-x86_64.o, elf
 endif
 endif
 
-# ---------------- ovmf (для make run) ----------------
+# ---------------- ovmf (make run) ----------------
 OVMF_CODE := $(firstword $(wildcard \
                 /usr/share/ovmf/x64/OVMF_CODE.4m.fd \
                 /usr/share/ovmf/x64/OVMF_CODE.fd \
