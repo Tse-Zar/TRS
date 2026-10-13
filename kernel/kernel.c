@@ -55,17 +55,20 @@ void kmain(boot_info_t* bi) {
     dsp_print("[+]\n");
 
 
-    dsp_set_color(_Flamingo, _Crust);
+    dsp_set_color(_Sapphire, _Crust);
     dsp_print("TRS OS v" __TRS_VERSION "\n");
     dsp_print("==============\n\n");
 
-    dsp_set_color(_Green, _Crust);
+    dsp_set_color(_Yantar, _Crust);
     dsp_print("> [SYSTEM] ready.\n");
+
+    dsp_print("       .-.-.\n" "  ((  (__I__)  ))\n" "    .'_....._'.\n" "   / / .12 . \\ \\\n" "  | | '  |  ' | |\n" "  | | 9  /  3 | |\n");
+    dsp_print("   \\ \\ '.6.' / /\n" "    '.`-...-'.'\n" "     /'-- --'\\\n" "    `\"\"\"\"\"\"\"\"\"` \n");
     
     #define PANIC_TEST 0
 
 #if PANIC_TEST == 1
-    __asm__ volatile("int3");                        /* Breakpoint, vector 3 */
+    __asm__ volatile("int3");                        
 #elif PANIC_TEST == 2
     __asm__ volatile(
     "xorl %%ecx, %%ecx\n\t"
@@ -74,14 +77,16 @@ void kmain(boot_info_t* bi) {
     "divl %%ecx\n\t"      
     ::: "eax", "ecx", "edx", "cc");
 #elif PANIC_TEST == 3
-    *(volatile unsigned long long*)0x100000012010ULL = 1;   /* 4 ГБ → #PF, err=2, cr2=0x100000000 */
+    *(volatile unsigned long long*)0x100000012010ULL = 1; 
 #endif
     __asm__ volatile("sti");
+
 
     dsp_set_color(_Yantar, _Crust);
     //dsp_print("START TERMINAL..");
     //start_process("space/sys/term.pro")
     stream_t* kb = kbd_get_stream();
+
     char c;
     while(1) {
         __asm__ volatile ("cli");

@@ -19,19 +19,21 @@ $ Текущая версия: **0x0x3**
 ```
 TRS/
 ├── bootloader/   # текущий загрузчик - UEFI (mbr - устаревший)
-├── kernel/       # ядро: kmain, IDT, PIC, драйверы, стримы, linker.ld
+├── kernel/       # ядро
 ├── libc/         # freestanding-библиотека: mem, string, mutex
 ├── terminal/     # терминал (в разработке)
 ├── trfs/         # файловая система (в разработке)
-├── build/        # артефакты сборки (создаётся автоматически)
 └── Makefile      # сборка, запуск и отладка
 ```
 **Реализовано:**
-- Текстовый вывод на GOP framebuffer `driver/image.c`)
+- Текстовый вывод на GOP framebuffer 
 - Таблица прерываний IDT и контроллер PIC
 - Драйвер PS/2-клавиатуры
-- Система потоков ввода-вывода на ring buffer (`kernel/stream.c`)
-- Мини-libc: `memset` / `memcpy` / `strlen` и др., мьютексы на атомарных операциях
+- Система потоков ввода-вывода на ring buffer 
+- Мини-libc: `memset` / `memcpy` / `strlen` и др.
+- Panic-screen с выводом ошибки и регистров
+- GDT (NULL, KernelCode, KernelData, UserCode, UserData)
+
 
 **В планах:**
 - Терминал (shell) — `terminal/`
@@ -45,4 +47,24 @@ space/--system/     ; файлы системы
       --user/       ; файлы пользователя
 dump/               ; дамп процессов
 sand/               ; изолированная среда
+```
+---
+
+## Инструкции по установке пакетов
+
+### Для Ubuntu / Debian
+```bash
+sudo apt update
+sudo apt install build-essential nasm gnu-efi ovmf parted dosfstools mtools qemu-system-x86
+```
+
+### Для Arch Linux
+```bash
+sudo pacman -Syu --needed base-devel nasm gnu-efi ovmf parted dosfstools mtools qemu-desktop
+```
+
+### Для Fedora
+```bash
+sudo dnf groupinstall "Development Tools"
+sudo dnf install nasm gnu-efi edk2-ovmf parted dosfstools mtools qemu-kvm
 ```

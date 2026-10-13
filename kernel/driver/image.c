@@ -45,12 +45,15 @@ void dsp_clear(void) {
     for(unsigned int i = 0; i < total; ++i) {
         dst[i] = bg;
     }
+
+    dsp_x = 0;
+    dsp_y = 0;
 }
 
 void dsp_init(framebuf_info_t framebuffer) {
     extern char _binary_ter_v32b_psf_start[];
     font = (psf_header*)_binary_ter_v32b_psf_start;
-    //if(font->magic != PSF2_MAGIC) return; // kern fatal
+    //if(font->magic != PSF2_MAGIC) return; 
     fb = framebuffer;
 
     dsp_clear();    
