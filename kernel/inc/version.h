@@ -1,6 +1,6 @@
 #ifndef VERSION_H
 #define VERSION_H
 
-#define __TRS_VERSION "0.0.3"
+#define __TRS_VERSION "0.0.4"
 
 #endif // VERSION_H

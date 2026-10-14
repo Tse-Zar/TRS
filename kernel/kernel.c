@@ -17,7 +17,14 @@
 #include <bootinfo.h>
 #include <string.h>
 #include <gdt.h>
+#include <colors.h>
+
 boot_info_t _boot;
+
+#define YES \
+    dsp_set_color(_Peach, _Crust); \
+    dsp_print("[+]\n"); \
+    dsp_set_color(_Sapphire, _Crust);
 
 void kmain(boot_info_t* bi) {
     memcpy(&_boot, bi, sizeof(boot_info_t));
@@ -30,33 +37,31 @@ void kmain(boot_info_t* bi) {
     dsp_init(_boot.fb);
     dsp_set_color(_Sapphire, _Crust);
     dsp_print("Display initialized. ");
-    dsp_set_color(_Peach, _Crust);
-    dsp_print("[+]\n");
+    YES
 
-    dsp_set_color(_Sapphire, _Crust);
     dsp_print("GDT initalized. ");
-    dsp_set_color(_Peach, _Crust);
-    dsp_print("[+]\n");
+    YES
 
-    dsp_set_color(_Sapphire, _Crust);
     dsp_print("IDT initialized. ");
-    dsp_set_color(_Peach, _Crust);
-    dsp_print("[+]\n");
+    YES
 
-    dsp_set_color(_Sapphire, _Crust);
     dsp_print("PIC remaped. ");
-    dsp_set_color(_Peach, _Crust);
-    dsp_print("[+]\n");
+    YES
 
-    dsp_set_color(_Sapphire, _Crust);
     kb_init();
     dsp_print("Keyboard intialized. ");
-    dsp_set_color(_Peach, _Crust);
-    dsp_print("[+]\n");
+    YES
 
+    pmm_init(&_boot);
+    dsp_print("Memory initialized. ");
+    YES
 
-    dsp_set_color(_Sapphire, _Crust);
-    dsp_print("TRS OS v" __TRS_VERSION "\n");
+    dsp_print("usable pages: ");
+    dsp_print_dec(pmm_usable_pages());
+    dsp_print("\nused pages: ");
+    dsp_print_dec(pmm_used_pages());
+
+    dsp_print("\nTRS OS v" __TRS_VERSION "\n");
     dsp_print("==============\n\n");
 
     dsp_set_color(_Yantar, _Crust);

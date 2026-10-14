@@ -1,6 +1,7 @@
 #include <image.h>
 #include <stdbool.h>
 #include <string.h>
+#include <colors.h>
 
 #define PSF2_MAGIC 0x72B54A86
 
@@ -57,6 +58,27 @@ void dsp_init(framebuf_info_t framebuffer) {
     fb = framebuffer;
 
     dsp_clear();    
+}
+
+void dsp_print_dec(int num) {
+    unsigned int k;
+    if(num < 0) {
+        dsp_putchar('-');
+        k = (unsigned int)-num;
+    } else {
+        k = (unsigned int)num;
+    }
+
+    char buffer[64];
+
+    int i = 0;
+    do {
+        char n = '0' + k % 10;
+        buffer[i++] = n;
+        k /= 10;
+    } while(k > 0);
+
+    while(i > 0) dsp_putchar(buffer[--i]);
 }
 
 void dsp_putchar(char c) {

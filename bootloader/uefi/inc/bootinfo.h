@@ -43,6 +43,14 @@ typedef struct {
 } memmap_t;
 
 typedef struct {
+    unsigned int       type;
+    unsigned int       pad;
+    unsigned long long phys;
+    unsigned long long virt;
+    unsigned long long pages;
+    unsigned long long attrs;
+} __attribute__((packed)) mem_desc_t;
+typedef struct {
     framebuf_info_t fb;
     //memmap_t        mm;
 
