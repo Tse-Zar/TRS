@@ -10,7 +10,7 @@
 - Ядро будет стараться поддерживать "жизнь" системы. Предупреждая пользователя и убивая не приоритетные процессы, освобождая память и оптимизируя работу
 - Дампинг памяти процессов в специальный раздел на диске для ввостановления и возможности понять, где именно произошла ошибка. 
 
-$ Текущая версия: **0x0x4**
+$ Текущая версия: **0.0.4**
 
 ![Shot](system.png)
 
@@ -33,13 +33,7 @@ TRS/
 - Мини-libc: `memset` / `memcpy` / `strlen` и др.
 - Panic-screen с выводом ошибки и регистров
 - GDT (NULL, KernelCode, KernelData, UserCode, UserData)
-
-
-**В планах:**
-- Терминал (shell) — `terminal/`
-- Файловая система TRFS (VFS) — `trfs/`
-- Менеджер памяти и пейджинг — `kernel/memory_pagging.c`
-- Динамическое выделение памяти (`malloc`/`free`)
+- FAT32 & DISK драйверы
 
 **Разметка диска:**
 ```
@@ -68,3 +62,6 @@ sudo pacman -Syu --needed base-devel nasm gnu-efi ovmf parted dosfstools mtools 
 sudo dnf groupinstall "Development Tools"
 sudo dnf install nasm gnu-efi edk2-ovmf parted dosfstools mtools qemu-kvm
 ```
+
+## Дополнение:
+### [FAT32](https://github.com/strawberryhacker/fat32.git) взят у strawberryhacker 
