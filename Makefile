@@ -48,7 +48,7 @@ OVMF_VARS_SRC := $(firstword $(wildcard \
                 $(subst OVMF_CODE,OVMF_VARS,$(OVMF_CODE))))
 
 # ---------------- kernel flags ----------------
-KINC    := -Ikernel/inc -Ilibc/inc -Ibootloader/uefi/inc
+KINC    := -Ikernel/inc -Ilibc/inc -Ibootloader/uefi/inc -Itrfs/fat32
 KCFLAGS := -ffreestanding -m64 -mno-red-zone -mno-mmx -mno-sse -mno-sse2 \
            -mcmodel=small -fno-pie -fno-stack-protector \
            -fno-asynchronous-unwind-tables -fno-omit-frame-pointer \
@@ -80,7 +80,7 @@ KERNELBIN := $(BUILD)/kernel.bin
 FONT_PSF := ter-v32b.psf
 FONT_OBJ := $(BUILD)/terminus.o
 
-KSRC := $(wildcard kernel/*.c kernel/driver/*.c libc/*.c kernel/cpu/*.c)
+KSRC := $(wildcard kernel/*.c kernel/driver/*.c libc/*.c kernel/cpu/*.c trfs/fat32/*.c)
 KASM := $(wildcard kernel/*.asm kernel/cpu/*.asm)
 
 KOBJ := $(patsubst %.c,$(BUILD)/%.o,$(KSRC)) \
@@ -91,7 +91,7 @@ BOBJ := $(BUILD)/boot/boot.o
 DIRS := $(BUILD) $(BUILD)/boot
 
 # ---------------- targets ----------------
-.PHONY: all kernel boot disk run debug clean
+.PHONY: all kernel boot disk run debug clean log
 .SECONDARY: $(KOBJ) $(BOBJ)
 all: disk
 
@@ -176,6 +176,9 @@ RUN_FLAGS := -drive if=pflash,format=raw,readonly=on,file=$(OVMF_CODE) \
 
 run: $(DISK) $(RUN_VARS)
 	$(QEMU) -m 512M -vga std -global VGA.xres=1280 -global VGA.yres=720 -display gtk,zoom-to-fit=on $(RUN_FLAGS) -drive format=raw,media=disk,file=$(DISK)
+
+log: $(DISK) $(RUN_VARS)
+	GDK_BACKEND=x11 $(QEMU) -m 512M -serial file:qemu.log -no-reboot -no-shutdown -d int,cpu_reset -D qemu.log -display gtk,zoom-to-fit=off $(RUN_FLAGS) -drive format=raw,media=disk,file=$(DISK)
 
 debug: $(DISK) $(RUN_VARS)
 	GDK_BACKEND=x11 $(QEMU) -m 512M -serial file:qemu.log -no-reboot -no-shutdown -d int,cpu_reset -D qemu.log -s -S -display gtk,zoom-to-fit=off $(RUN_FLAGS) -drive format=raw,media=disk,file=$(DISK)

@@ -18,6 +18,10 @@
 #include <string.h>
 #include <gdt.h>
 #include <colors.h>
+#include <gpt.h>
+#include <fat32.h>
+#include <disk.h>
+#include <panic.h>
 
 boot_info_t _boot;
 
@@ -56,6 +60,26 @@ void kmain(boot_info_t* bi) {
     dsp_print("Memory initialized. ");
     YES
 
+    disk_init();
+    dsp_print("Disk initialized. ");
+    YES
+    
+    dsp_set_color(_Lavender, _Crust);
+    dsp_print("\n\nSystem info:\n----\n");
+    int ferr = fat32_init(0);
+    dsp_print("FAT32 init: ");
+    dsp_print(fat_get_error(ferr));
+
+    if(ferr == FAT_ERR_NONE) {
+        DirInfo info;
+        if(fat_stat("/sys/space/sys/kern/kernel.bin", &info) == FAT_ERR_NONE) {
+            dsp_print("\nkernel.bin size: ");
+            dsp_print_dec((int)info.size);
+            dsp_print("\n");
+        } else {
+            kpanic("NO DISK", __FILE__, __LINE__);
+        }
+    }
     dsp_print("usable pages: ");
     dsp_print_dec(pmm_usable_pages());
     dsp_print("\nused pages: ");
@@ -65,25 +89,13 @@ void kmain(boot_info_t* bi) {
     dsp_print("==============\n\n");
 
     dsp_set_color(_Yantar, _Crust);
-    dsp_print("> [SYSTEM] ready.\n");
+    dsp_print("> [SYSTEM] ready.\n\n");
 
     dsp_print("       .-.-.\n" "  ((  (__I__)  ))\n" "    .'_....._'.\n" "   / / .12 . \\ \\\n" "  | | '  |  ' | |\n" "  | | 9  /  3 | |\n");
     dsp_print("   \\ \\ '.6.' / /\n" "    '.`-...-'.'\n" "     /'-- --'\\\n" "    `\"\"\"\"\"\"\"\"\"` \n");
     
     #define PANIC_TEST 0
 
-#if PANIC_TEST == 1
-    __asm__ volatile("int3");                        
-#elif PANIC_TEST == 2
-    __asm__ volatile(
-    "xorl %%ecx, %%ecx\n\t"
-    "movl $1, %%eax\n\t"
-    "xorl %%edx, %%edx\n\t"
-    "divl %%ecx\n\t"      
-    ::: "eax", "ecx", "edx", "cc");
-#elif PANIC_TEST == 3
-    *(volatile unsigned long long*)0x100000012010ULL = 1; 
-#endif
     __asm__ volatile("sti");
 
 

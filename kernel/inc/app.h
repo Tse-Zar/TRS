@@ -31,7 +31,5 @@ _Static_assert(sizeof(pro_hdr_t) == PRO_HDR_SIZE, ".pro header must be 64 bytes"
 
 void app_init(boot_info_t* bi);
 
-int app_exec(const char* path, const char* args);
-
 int start_process(const char* path);
 #endif // APP_H

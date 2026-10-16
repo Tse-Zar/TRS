@@ -60,6 +60,7 @@ void dsp_init(framebuf_info_t framebuffer) {
     dsp_clear();    
 }
 
+/* display print decimal number */
 void dsp_print_dec(int num) {
     unsigned int k;
     if(num < 0) {

@@ -19,7 +19,7 @@ static inline unsigned short inw(unsigned short port) {
     return word;
 }
 
-static inline unsigned short outw(unsigned short w, unsigned short port) {
+static inline void outw(unsigned short w, unsigned short port) {
     __asm__ volatile("outw %0, %1" :: "a"(w), "Nd"(port));
 }
 
