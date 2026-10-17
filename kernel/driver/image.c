@@ -171,3 +171,8 @@ void dsp_print_hex(unsigned long long v) {
     buf[18] = '\0';
     dsp_print(buf);
 }
+
+void dsp_set_cursor(unsigned int x, unsigned int y) {
+    dsp_x = x ? x * font->width : dsp_x;
+    dsp_y = y ? y * font->height : dsp_y;
+}

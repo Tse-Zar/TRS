@@ -10,6 +10,7 @@
 
 void dsp_init(framebuf_info_t frame);
 void dsp_set_color(unsigned int col_fg, unsigned int col_bg);
+void dsp_set_cursor(unsigned int x, unsigned int y);
 void dsp_clear(void);
 
 void dsp_print(const char* str);
