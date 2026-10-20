@@ -7,6 +7,8 @@
 
 #include <idt.h>
 
+#define SYSCALL_VECTOR 0x77
+
 #define SYS_WRITE 1
 
 void syscall_init(void);

@@ -149,6 +149,13 @@ void kmain(boot_info_t* bi) {
     dsp_set_color(_Yantar, _Crust);
     dsp_print("START TERMINAL..");
     //start_process("space/sys/term.pro")
+    dsp_set_color(_Red, _Crust);
+    
+    __asm__ volatile ("int $0x77\n\t"
+                      :
+                      : "a"(SYS_WRITE), "d"((void*)"\nONE SYSCALL\0")
+                      : "memory");
+
     while(1) {
         __asm__ volatile ("sti; hlt");
     }

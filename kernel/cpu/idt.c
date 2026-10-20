@@ -34,7 +34,7 @@ typedef struct {
 static idt_entry_t idt[IDT_ENTRIES];
 static idt_ptr_t   idt_ptr;
 
-static isr_handler_t isr_handlers[32];
+static isr_handler_t isr_handlers[256];
 static isr_handler_t irq_handlers[16];
 
 extern void* isr_stub_table[256];
@@ -63,7 +63,7 @@ static void idt_set_gate(unsigned char num, void* handler, unsigned char ist) {
 }
 
 void isr_install(unsigned char vector, isr_handler_t handler) {
-    if(vector < 32) isr_handlers[vector] = handler;
+    if(vector < 255) isr_handlers[vector] = handler;
 }
 
 void irq_install(unsigned char irq, isr_handler_t handler) {
@@ -77,11 +77,9 @@ static int irq_is_spurvious(unsigned irq) {
 }
 
 void isr_dispatcher(_regs_t *reg) {
+    if(isr_handlers[reg->int_no]) isr_handlers[reg->int_no](reg);
+
     if(reg->int_no < 32) {
-        if(isr_handlers[reg->int_no]) {
-            isr_handlers[reg->int_no](reg);
-            return;
-        }
 
         kpanic_regs(reg, exc_names[reg->int_no]);
         return;
