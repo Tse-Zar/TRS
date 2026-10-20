@@ -93,24 +93,46 @@ void pmm_init(boot_info_t *bi) {
     }
 
     reserv_range(0, 0x100000);
+    reserv_range(0x400000, 0x100000);
     reserv_range((unsigned long long)__kernel_start, (unsigned long long)(__kernel_end - __kernel_start));
     reserv_range((unsigned long long)bitmap, bitmap_bytes);
     reserv_range(bi->fb.base, bi->fb.size);
     reserv_range(bi->stack_top - 128ULL * 1024, 128ULL * 1024);
     reserv_range(bi->mmap_addr, bi->mmap_size);
+    reserv_range(0x400000, 0x100000);
 }
 
-void* pmm_alloc_page(void) {
-    if(!bitmap) return 0;
+void* pmm_alloc_pages(unsigned long long  pages) {
+    if (!bitmap || pages <= 0) return NULL;
 
-    for(unsigned long long p = 0; p < last_alloc; ++p) {
-        if(!bitmap_test(p)) {
-            bitmap_set(p); used_pages++; last_alloc = p + 1;
-            return (void*)(p * PAGE_SIZE);
+    unsigned long long consecutive_pages = 0;
+    unsigned long long start_page = 0;
+
+    for (unsigned long long p = 0; p < total_pages; ++p) {
+        if (!bitmap_test(p)) {
+            if (consecutive_pages == 0) {
+                start_page = p; 
+            }
+            consecutive_pages++;
+
+            if (consecutive_pages == pages) {
+                for (unsigned long long i = start_page; i <= p; ++i) {
+                    bitmap_set(i);
+                }
+                
+                used_pages += pages;
+                last_alloc = p + 1;
+                
+                return (void*)(start_page * PAGE_SIZE);
+            }
+        } else {
+            consecutive_pages = 0;
         }
     }
-    return 0;
+
+    return NULL; 
 }
+
 
 void pmm_free_page(void *page) {
     if(!bitmap) return;

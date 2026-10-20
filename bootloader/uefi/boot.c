@@ -116,14 +116,23 @@ static void get_mmaped_end_exit(void) {
     UINTN msize = 0x1000;
     UINTN mkey, dsize;
     UINT32 dver;
-    EFI_MEMORY_DESCRIPTOR* ds;
+    EFI_MEMORY_DESCRIPTOR* ds = NULL;
 
     while(1) {
-        uefi_call_wrapper(BS->AllocatePool, 3, EfiLoaderData, msize, (void**)&ds);
+        if (ds != NULL) {
+            uefi_call_wrapper(BS->FreePool, 1, ds);
+            ds = NULL;
+        }
 
-        EFI_STATUS es = uefi_call_wrapper(BS->GetMemoryMap, 5, &msize, ds, &mkey, &dsize, &dver);
+        if (uefi_call_wrapper(BS->AllocatePool, 3, EfiLoaderData, msize, (void**)&ds) != EFI_SUCCESS) {
+            fatal("cannot allocate pool for mmap.");
+        }
+
+        UINTN actual_size = msize; 
+        EFI_STATUS es = uefi_call_wrapper(BS->GetMemoryMap, 5, &actual_size, ds, &mkey, &dsize, &dver);
+        
         if(es == EFI_BUFFER_TOO_SMALL) {
-            msize += 0x2000;
+            msize = actual_size + 0x2000;
             continue;
         }
         if(es != EFI_SUCCESS) {
@@ -131,16 +140,17 @@ static void get_mmaped_end_exit(void) {
         }
 
         _bootinfo.mmap_dsize = dsize;
-        _bootinfo.mmap_size  = msize;
+        _bootinfo.mmap_size  = actual_size; 
         _bootinfo.mmap_addr  = (unsigned long long)(UINTN)ds;
 
         if(uefi_call_wrapper(BS->ExitBootServices, 2, _imagehandle, mkey) == EFI_SUCCESS) {
             return;
         }
 
-        msize += 0x2000;
+        msize = actual_size + 0x2000;
     }
 }
+
 
 static void __attribute__((noreturn)) kjump(EFI_PHYSICAL_ADDRESS entry, EFI_PHYSICAL_ADDRESS stack, boot_info_t* bi) { \
     register boot_info_t* rdi_bi __asm__ ("%rdi") = bi;

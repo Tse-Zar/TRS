@@ -14,7 +14,7 @@
 #define PAGE_SIZE 4096
 
 void pmm_init(boot_info_t* bi);
-void* pmm_alloc_page(void);
+void* pmm_alloc_pages(unsigned long long p);
 void pmm_free_page(void* page);
 
 unsigned long long pmm_usable_pages(void);

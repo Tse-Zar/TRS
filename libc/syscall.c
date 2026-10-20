@@ -1,4 +1,4 @@
-#include <syscalls.h>
+#include <syscall.h>
 
 void syscall1(int call, void *one) {
     __asm__ volatile ("int $0x77\n\t"

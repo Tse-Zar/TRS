@@ -23,6 +23,7 @@
 #include <disk.h>
 #include <panic.h>
 #include <sys.h>
+#include <app.h>
 
 boot_info_t _boot;
 
@@ -145,10 +146,15 @@ void kmain(boot_info_t* bi) {
 
     __asm__ volatile("sti");
 
-
     dsp_set_color(_Yantar, _Crust);
-    dsp_print("START TERMINAL..");
-    //start_process("space/sys/term.pro")
+    dsp_print("START TERMINAL..\n");
+    stream_t* kb = kbd_get_stream();
+    char c = 0;
+    while(1) {
+        if(stream_try_read(kb, &c, 1)) break;
+        __asm__ volatile("pause"); 
+    }
+    //start_process("/sys/space/sys/term.pro");
     dsp_set_color(_Red, _Crust);
     
     __asm__ volatile ("int $0x77\n\t"

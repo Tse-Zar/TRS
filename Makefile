@@ -2,6 +2,7 @@
 # = TRS - Tsezar Reliable System | build system               =
 # =  build/BOOTX64.EFI  - UEFI loader (GNU-EFI, PE32+)        =
 # =  build/kernel.bin   - kernel flat binary                  =
+# =  build/term.pro     - terminal app (.pro: hdr + image)    =
 # =  build/trs.img      - GPT disk + FAT32 ESP                =
 # =============================================================
 
@@ -27,7 +28,7 @@ EFILIBS := $(firstword $(wildcard $(addsuffix /libgnuefi.a,$(GNUEFI_DIRS)))) \
            $(firstword $(wildcard $(addsuffix /libefi.a,$(GNUEFI_DIRS))))
 EFIINC  ?= $(firstword $(wildcard /usr/include/efi))
 
-# gnu-efi is needed only for the boot loader; 'make clean' / 'make kernel' work without it
+# gnu-efi is needed only for the boot loader; 'make clean' / 'make kernel' / 'make term' work without it
 GOALS := $(if $(MAKECMDGOALS),$(MAKECMDGOALS),all)
 ifneq ($(filter all boot disk run debug,$(GOALS)),)
 ifeq ($(and $(EFICRT0),$(EFILDS),$(EFIINC)),)
@@ -50,11 +51,23 @@ OVMF_VARS_SRC := $(firstword $(wildcard \
 # ---------------- kernel flags ----------------
 KINC    := -Ikernel/inc -Ilibc/inc -Ibootloader/uefi/inc -Itrfs/fat32
 KCFLAGS := -ffreestanding -m64 -mno-red-zone -mno-mmx -mno-sse -mno-sse2 \
+           -fno-builtin -fno-builtin-memcpy -fno-builtin-memset \
            -mcmodel=small -fno-pie -fno-stack-protector \
            -fno-asynchronous-unwind-tables -fno-omit-frame-pointer \
-           -fcf-protection=none \
+           -fcf-protection=none -fno-builtin\
            -O2 -g -Wall -Wextra -MMD -MP $(KINC)
+
 KLDFLAGS := -nostdlib -z max-page-size=0x1000 -z noexecstack -T kernel/linker.ld
+
+# ---------------- terminal (app) flags ----------------
+# kernel/inc is here for app.h (.pro header layout); libc/inc for the freestanding libc
+TINC     := -Iterminal/inc -Ilibc/inc -Ikernel/inc -Ibootloader/uefi/inc
+TCFLAGS  := -ffreestanding -m64 -mno-red-zone -mno-mmx -mno-sse -mno-sse2 \
+            -mcmodel=small -fno-pie -fno-stack-protector \
+            -fno-asynchronous-unwind-tables -fno-omit-frame-pointer \
+            -fcf-protection=none \
+            -O2 -g -Wall -Wextra -MMD -MP $(TINC)
+TLDFLAGS := -nostdlib -z max-page-size=0x1000 -z noexecstack -T terminal/linker.ld
 
 # ---------------- uefi loader flags ----------------
 BCFLAGS := -ffreestanding -m64 -mno-red-zone -DEFI_FUNCTION_WRAPPER \
@@ -77,10 +90,14 @@ BOOT_ELF  := $(BUILD)/boot.elf
 BOOT_EFI  := $(BUILD)/BOOTX64.EFI
 KERNEL    := $(BUILD)/kernel.elf
 KERNELBIN := $(BUILD)/kernel.bin
-FONT_PSF := ter-v32b.psf
-FONT_OBJ := $(BUILD)/terminus.o
+FONT_PSF  := ter-v32b.psf
+FONT_OBJ  := $(BUILD)/terminus.o
+TERM      := $(BUILD)/term.elf
+TERM_PRO  := $(BUILD)/term.pro
 
-KSRC := $(wildcard kernel/*.c kernel/driver/*.c libc/*.c kernel/cpu/*.c trfs/fat32/*.c)
+LIBC_KSRC := $(filter-out libc/stdio.c libc/syscall.c,$(wildcard libc/*.c))
+
+KSRC := $(wildcard kernel/*.c kernel/driver/*.c kernel/cpu/*.c trfs/fat32/*.c) $(LIBC_KSRC)
 KASM := $(wildcard kernel/*.asm kernel/cpu/*.asm)
 
 KOBJ := $(patsubst %.c,$(BUILD)/%.o,$(KSRC)) \
@@ -88,13 +105,24 @@ KOBJ := $(patsubst %.c,$(BUILD)/%.o,$(KSRC)) \
         $(FONT_OBJ)
 BOBJ := $(BUILD)/boot/boot.o
 
+# app objects: terminal sources + the libc pieces it needs
+# (libc objects are shared with the kernel build; flags are identical except include paths)
+TSRC := $(wildcard terminal/*.c)
+TASM := $(wildcard terminal/*.asm)
+TLIB := $(BUILD)/libc/string.o $(BUILD)/libc/stdio.o $(BUILD)/libc/syscall.o
+
+TOBJ := $(patsubst %.c,$(BUILD)/%.o,$(TSRC)) \
+        $(patsubst %.asm,$(BUILD)/%.o,$(TASM)) \
+        $(TLIB)
+
 DIRS := $(BUILD) $(BUILD)/boot
 
 # ---------------- targets ----------------
-.PHONY: all kernel boot disk run debug clean log
-.SECONDARY: $(KOBJ) $(BOBJ)
+.PHONY: all kernel boot disk term run debug clean log
+.SECONDARY: $(KOBJ) $(BOBJ) $(TOBJ)
 all: disk
 
+term:   $(TERM_PRO)
 kernel: $(KERNELBIN)
 boot:   $(BOOT_EFI)
 disk:   $(DISK)
@@ -124,6 +152,26 @@ $(KERNELBIN): $(KERNEL)
 	$(OBJCOPY) -O binary $< $@
 	@echo "[kernel] flat binary: $@ ($$(stat -c%s $@) bytes)"
 
+# --- terminal: ELF -> .pro (TRSP header baked in by terminal/linker.ld) ---
+# terminal/*.o must be built with TCFLAGS, so they get their own pattern rules
+$(BUILD)/terminal/%.o: terminal/%.c | $(DIRS)
+	@mkdir -p $(dir $@)
+	$(CC) $(TCFLAGS) -c $< -o $@
+
+$(BUILD)/terminal/%.o: terminal/%.asm | $(DIRS)
+	@mkdir -p $(dir $@)
+	$(NASM) -f elf64 $< -o $@
+
+$(TERM): $(TOBJ) terminal/linker.ld | $(DIRS)
+	$(LD) $(TLDFLAGS) $(TOBJ) -o $@
+	@echo "[term] linked: $@"
+
+# .bss is dropped on purpose: file size == pro_hdr_t.image_size,
+# start_process() zeroes [image_size, mem_size) itself
+$(TERM_PRO): $(TERM)
+	$(OBJCOPY) -O binary --remove-section=.bss $< $@
+	@echo "[term] packed: $@ ($$(stat -c%s $@) bytes)"
+
 # --- uefi boot: ELF -> PE32+ .EFI ---
 $(BOBJ): bootloader/uefi/boot.c | $(DIRS)
 	@mkdir -p $(dir $@)
@@ -143,10 +191,11 @@ $(BOOT_EFI): $(BOOT_ELF)
 # on-disk tree (matches README):
 #   /EFI/BOOT/BOOTX64.EFI
 #   /space/sys/kern/kernel.bin
+#   /space/sys/term.pro
 #   /space/user/
 #   /dump/
 #   /sand/
-$(DISK): $(BOOT_EFI) $(KERNELBIN)
+$(DISK): $(BOOT_EFI) $(KERNELBIN) $(TERM_PRO)
 	@echo "[disk] GPT + FAT32 ESP -> $@"
 	rm -f $(ESP_IMG)
 	$(MKFAT) -F32 -C $(ESP_IMG) $(ESP_KB)
@@ -159,6 +208,7 @@ $(DISK): $(BOOT_EFI) $(KERNELBIN)
 	$(MMD) -i $(ESP_IMG) ::/space/sys/kern
 	$(MCOPY) -i $(ESP_IMG) $(BOOT_EFI) ::/EFI/BOOT/BOOTX64.EFI
 	$(MCOPY) -i $(ESP_IMG) $(KERNELBIN) ::/space/sys/kern/kernel.bin
+	$(MCOPY) -i $(ESP_IMG) $(TERM_PRO) ::/space/sys/term.pro
 	$(DD) if=$(ESP_IMG) of=$(DISK) bs=$(ESP_OFF) seek=1 conv=notrunc status=none
 	@echo "[disk] done: $@"
 
@@ -178,14 +228,14 @@ run: $(DISK) $(RUN_VARS)
 	$(QEMU) -m 512M -vga std -global VGA.xres=1280 -global VGA.yres=720 -display gtk,zoom-to-fit=on $(RUN_FLAGS) -drive format=raw,media=disk,file=$(DISK)
 
 log: $(DISK) $(RUN_VARS)
-	GDK_BACKEND=x11 $(QEMU) -m 512M -serial file:qemu.log -no-reboot -no-shutdown -d int,cpu_reset -D qemu.log -display gtk,zoom-to-fit=off $(RUN_FLAGS) -drive format=raw,media=disk,file=$(DISK)
+	GDK_BACKEND=x11 $(QEMU) -m 512M -serial file:qemu.log -no-reboot -no-shutdown -d cpu_reset -D qemu.log -display gtk,zoom-to-fit=off $(RUN_FLAGS) -drive format=raw,media=disk,file=$(DISK)
 
 debug: $(DISK) $(RUN_VARS)
 	GDK_BACKEND=x11 $(QEMU) -m 512M -serial file:qemu.log -no-reboot -no-shutdown -d int,cpu_reset -D qemu.log -s -S -display gtk,zoom-to-fit=off $(RUN_FLAGS) -drive format=raw,media=disk,file=$(DISK)
 endif
 
 # --- deps & clean ---
--include $(KOBJ:.o=.d) $(BOBJ:.o=.d)
+-include $(KOBJ:.o=.d) $(BOBJ:.o=.d) $(TOBJ:.o=.d)
 
 clean:
 	rm -rf $(BUILD)

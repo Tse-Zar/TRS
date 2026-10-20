@@ -1,7 +1,7 @@
 #include <gdt.h>
 #include <string.h>
 
-#define GDT_ENTRIES 6
+#define GDT_ENTRIES 7
 
 typedef struct {
     unsigned int       reserved0;
@@ -33,12 +33,18 @@ static void gdt_set_tss(int i) {
     unsigned long long base = (unsigned long long)&tss;
     unsigned int limit      = sizeof(tss) - 1;
 
-    gdt_set_gate(i, (unsigned int)base, limit, 0x89, 0x00);
+    gdt[i].limit_low = (unsigned short)(limit & 0xFFFF);
+    gdt[i].base_low  = (unsigned short)(base & 0xFFFF);
+    gdt[i].base_mid  = (unsigned char)((base >> 16) & 0xFF);
+    gdt[i].access    = 0x89; 
+    gdt[i].flags     = (unsigned char)((limit >> 16) & 0x0F);
+    gdt[i].base_high = (unsigned char)((base >> 24) & 0xFF);
 
-    unsigned int* upper = (unsigned int*)((unsigned char*)&gdt[i] + 8);
-    upper[0] = (unsigned int)(base >> 32);
-    upper[1] = 0;
+    unsigned int* upper_slot = (unsigned int*)&gdt[i + 1];
+    upper_slot[0] = (unsigned int)(base >> 32);
+    upper_slot[1] = 0;
 }
+
 
 void tss_set_kernel_stack(unsigned long long rsp0) { tss.rsp0 = rsp0; }
 
@@ -50,9 +56,9 @@ void gdt_init(void) {
 
     gdt_set_gate(0, 0, 0, 0, 0);
     gdt_set_gate(1, 0, 0xFFFFFF, 0x9A, 0xA0);
-    gdt_set_gate(2, 0, 0xFFFFF, 0x92, 0xC0);
-    gdt_set_gate(3, 0, 0xFFFFF, 0xFA, 0xA0);
-    gdt_set_gate(4, 0, 0xFFFFF, 0xF2, 0xC0);
+    gdt_set_gate(2, 0, 0xFFFFFF, 0x92, 0xC0);
+    gdt_set_gate(3, 0, 0xFFFFFF, 0xFA, 0xA0);  // user code, DPL=3
+    gdt_set_gate(4, 0, 0xFFFFFF, 0xF2, 0xC0);  // user data, DPL=3
     gdt_set_tss(5);
 
     gdt_p.limit = sizeof(gdt) - 1;

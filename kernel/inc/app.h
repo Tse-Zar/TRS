@@ -7,6 +7,7 @@
 #define PRO_MAX_SIZE (1024 * 1024)
 
 #define PRO_FLAG_RING3 0x1
+#define PRO_BASE 0x400000ULL
 
 typedef struct {
     unsigned int       magic;
