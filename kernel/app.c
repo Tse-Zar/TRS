@@ -1,13 +1,11 @@
 #include <app.h>
 #include <fat32.h>
-#include <memory_paging.h>
 #include <string.h>
-#include <colors.h>
 
 #define PAGE_SIZE 4096
 #define APP_STACK_SIZE (16 * 1024) 
-/*
-int start_process(const char *path) {
+
+int start_proc(const char *path) {
     File file;
     int bytes;
 
@@ -21,4 +19,4 @@ int start_process(const char *path) {
                      : "r"((void*)PRO_BASE)
                      : "memory", "cc");
     return 0;
-}*/
+}

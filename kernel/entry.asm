@@ -13,7 +13,6 @@
 
 
 [section .text.entry]
-[section .note.GNU-stack noalloc noexec nowrite progbits]
 _start:
     xor ebp, ebp
     mov rdx, rdi
@@ -31,3 +30,6 @@ hang:
     cli
     hlt
     jmp near hang
+
+
+[section .note.GNU-stack noalloc noexec nowrite progbits]

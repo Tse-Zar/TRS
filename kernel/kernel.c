@@ -148,19 +148,16 @@ void kmain(boot_info_t* bi) {
 
     dsp_set_color(_Yantar, _Crust);
     dsp_print("START TERMINAL..\n");
+    dsp_print("Press any key for work!");
     stream_t* kb = kbd_get_stream();
     char c = 0;
     while(1) {
         if(stream_try_read(kb, &c, 1)) break;
         __asm__ volatile("pause"); 
     }
-    //start_process("/sys/space/sys/term.pro");
-    dsp_set_color(_Red, _Crust);
-    
-    __asm__ volatile ("int $0x77\n\t"
-                      :
-                      : "a"(SYS_WRITE), "d"((void*)"\nONE SYSCALL\0")
-                      : "memory");
+
+    dsp_clear();
+    start_proc("/sys/space/sys/term.pro");
 
     while(1) {
         __asm__ volatile ("sti; hlt");

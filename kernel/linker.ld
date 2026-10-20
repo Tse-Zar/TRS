@@ -15,9 +15,13 @@ SECTIONS
     
     .text : {
         *(.text.entry)
+    } :text
+
+    .text_rest : {
         *(.text)
         *(.text.*)
     } :text
+
 
     . = ALIGN(4K);
     .rodata : {
