@@ -156,6 +156,7 @@ void kmain(boot_info_t* bi) {
         __asm__ volatile("pause"); 
     }
 
+    dsp_set_color(_Yantar, _TermBG);
     dsp_clear();
     start_proc("/sys/space/sys/term.pro");
 

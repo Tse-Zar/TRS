@@ -35,5 +35,6 @@
 #define _NordPolar2  0x3b4252
 #define _NordPolar3  0x4c566a
 #define _Yantar      0xFFBF00
+#define _TermBG      0x181513
 
 #endif // COLOR_H

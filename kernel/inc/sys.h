@@ -10,6 +10,7 @@
 #define SYSCALL_VECTOR 0x77
 
 #define SYS_WRITE 1
+#define SYS_READ  2
 
 void syscall_init(void);
 void syscall_handler(_regs_t* reg);
