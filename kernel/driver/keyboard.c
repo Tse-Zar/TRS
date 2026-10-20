@@ -37,7 +37,6 @@ static const char scancode_map[58][2] = {
 };
 
 static stream_t kb_stream;
-static unsigned char ext_prefix = 0;
 
 static bool shift_down = false;
 static bool caps_down  = false;
@@ -58,7 +57,6 @@ void kb_irq_handler(_regs_t* reg) {
     unsigned char sc = inb(KB_DATA_PORT);
 
     if(sc == 0xE0) {
-        ext_prefix = 1;
         return;
     }
     bool release = (sc & 0x80) != 0;
@@ -90,6 +88,5 @@ void kb_irq_handler(_regs_t* reg) {
         }
     }
     
-    ext_prefix = 0;
     return;
 }

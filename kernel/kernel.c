@@ -22,6 +22,7 @@
 #include <fat32.h>
 #include <disk.h>
 #include <panic.h>
+#include <sys.h>
 
 boot_info_t _boot;
 
@@ -32,7 +33,7 @@ boot_info_t _boot;
 static const char* statue[24] = {"    %%%", "   =====","  &%&%%%&", "  %& < <% ",
 "   &\\__/","    \\ |____","   .', ,  ()","  / -.  _)| "," |_(_.    |",
 " '-'\\  )  |"," trs )    |","    /  .  ).","   /    _. |"," /'---':.-'|",
-"(__.' /    /"," \\   ( /  /","  \\ /  _  | ","   \\  |  '|","  | . \\  |",
+"(__.' /    /"," \\   ( /  /","  \\ /  _  | ","   \\  |  '|","   | . \\  |",
 "   |(     | ","   |  \\ \\ |","    \\  )\\ |","   __)/ / \\","--\"--(_.Ooo'----" };
 
 #define PRINT_STATUE \
@@ -81,6 +82,11 @@ void kmain(boot_info_t* bi) {
     PRINT_STATUE
     disk_init();
     dsp_print("Disk initialized. ");
+    YES
+
+    PRINT_STATUE
+    syscall_init();
+    dsp_print("Syscall initialized. ");
     YES
 
     PRINT_STATUE
