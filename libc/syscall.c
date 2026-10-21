@@ -1,13 +1,20 @@
 #include <syscall.h>
 
-void syscall1(int call, void *one) {
+unsigned int syscall1(int call, void *one) {
+    long long ret;
     __asm__ volatile ("int $0x77\n\t"
-                      :
+                      : "=a"(ret)
                       : "a"(call), "d"(one)
                       : "memory");
+    return  ret;
 }
 
-void syscall2(int call, void* one, void* two) {
+unsigned int syscall2(int call, void* one, void* two) {
+    long long ret;
     __asm__ volatile ("int $0x77\n\t"
-                      :: "a"(call), "d"(one), "D"(two));
+                      : "=a"(ret)
+                      : "a"(call), "d"(one), "D"(two)
+                      : "memory");
+    
+    return ret;
 }

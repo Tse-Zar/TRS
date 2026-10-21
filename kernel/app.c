@@ -1,7 +1,5 @@
 #include <app.h>
 #include <fat32.h>
-#include <string.h>
-
 #define PAGE_SIZE 4096
 #define APP_STACK_SIZE (16 * 1024) 
 

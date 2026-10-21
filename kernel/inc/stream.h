@@ -31,6 +31,4 @@ int stream_try_read(stream_t* s, void* dst, unsigned len);
 int stream_write(stream_t* s, const void* src, unsigned len);
 void stream_init(stream_t* s, unsigned flags);
 
-extern stream_t* kstdin, *kstdout, *kstderr;
-
 #endif // STREAM_H
