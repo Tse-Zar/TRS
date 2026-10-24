@@ -95,7 +95,7 @@ void kpanic_regs(const _regs_t *reg, const char *msg) {
     dsp_print("  "); field("rsi", reg->rsi);  dsp_print("\n");
     dsp_print("  "); field("rbp", reg->rbp);  dsp_print("\n");
     dsp_print("  "); field("rbx", reg->rbx);  dsp_print("\n");
-    dsp_print("  "); field("rdx", reg->rdi);  dsp_print("\n");
+    dsp_print("  "); field("rdx", reg->rdx);  dsp_print("\n");
     dsp_print("  "); field("rdi", reg->rdi);  dsp_print("\n");
     dsp_print("  "); field("r8", reg->r8);    dsp_print("\n");
     dsp_print("  "); field("r9", reg->r9);    dsp_print("\n");

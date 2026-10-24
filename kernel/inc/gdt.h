@@ -3,7 +3,7 @@
     = TSEZAR TSEZAR TSEZAR TSEZAR TSEZAR =
     = ---------------------------------- =
     = Global Description Table for kenr  =
-    = Modes: NULL, Kenrel Code, Kenrel   =
+    = Modes: NULL, Kerrel Code, Kernel   =
     = Data, User Code, User Data ------- =
     ======================================
 */

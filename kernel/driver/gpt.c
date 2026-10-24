@@ -24,7 +24,7 @@ typedef struct {
     unsigned long long my_lba;
     unsigned long long alt_lba;
     unsigned long long first_usable;
-    unsigned long long last_usavle;
+    unsigned long long last_usable;
     unsigned char      disk_guid[16];
     unsigned long long parts_lba;
     unsigned int       parts_count;

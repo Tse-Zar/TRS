@@ -54,7 +54,7 @@ void pmm_init(boot_info_t *bi) {
         mem_desc_t* desc = desc_at(bi, i);
         if(desc->type != ConventionalMemory) continue;
 
-        unsigned long long end = desc->phys + desc->pages + PAGE_SIZE;
+        unsigned long long end = desc->phys + desc->pages * PAGE_SIZE;
         if(end > max_addr) max_addr = end;
     }
 
@@ -103,7 +103,7 @@ void pmm_init(boot_info_t *bi) {
 }
 
 void* pmm_alloc_pages(unsigned long long  pages) {
-    if (!bitmap || pages <= 0) return NULL;
+    if (!bitmap || pages == 0) return NULL;
 
     unsigned long long consecutive_pages = 0;
     unsigned long long start_page = 0;

@@ -57,20 +57,20 @@ static void idt_set_gate(unsigned char num, void* handler, unsigned char ist) {
     idt[num].offset_mid  = (unsigned short)((addr >> 16) & 0xFFFF);
     idt[num].offset_high = (unsigned int)((addr >> 32) & 0xFFFFFFFF);
     idt[num].selector    = GDT_KERNEL_CODE;
-    idt[num].zero        = 0;
-    idt[num].flags       = IDT_FLAGS_RINGO | (ist & 0x0F);
+    idt[num].zero        = ist & 0x0F;
+    idt[num].flags       = IDT_FLAGS_RINGO ;
     idt[num].reserved    = 0;
 }
 
 void isr_install(unsigned char vector, isr_handler_t handler) {
-    if(vector < 255) isr_handlers[vector] = handler;
+    isr_handlers[vector] = handler;
 }
 
 void irq_install(unsigned char irq, isr_handler_t handler) {
     if(irq < 16) irq_handlers[irq] = handler;
 }
 
-static int irq_is_spurvious(unsigned irq) {
+static int irq_is_spurious(unsigned irq) {
     unsigned short cmd = (irq < 8) ? PIC1_CMD : PIC2_CMD;
     outb(cmd, 0x0B);
     return !(inb(cmd) & (1 << (irq & 7)));
@@ -91,7 +91,7 @@ void isr_dispatcher(_regs_t *reg) {
 
     unsigned irq = reg->int_no - IRQ_BASE;
     if(irq == 7 || irq == 15) {
-        if(irq_is_spurvious(irq)) {
+        if(irq_is_spurious(irq)) {
             if(irq == 15) outb(PIC1_CMD, PIC_EOI);
             return;
         }

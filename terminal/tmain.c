@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include <colors.h>
+#include <dirent.h>
 
 static char current[100] = "space/user";
 
@@ -12,9 +14,9 @@ static void command_parser(char* com) {
                                     " '-'\\  )  |"," trs )    |","    /  .  ).","   /    _. |"," /'---':.-'|",
                                     "(__.' /    /"," \\   ( /  /","  \\ /  _  | ","   \\  |  '|","   | . \\  |",
                                     "   |(     | ","   |  \\ \\ |","    \\  )\\ |","   __)/ / \\","--\"--(_.Ooo'----" };
-        for(int i = 0; i < 25; ++i) {
+        for(int i = 0; i < 24; ++i) {
             set_crsr(55, 0);
-            set_color(0xf38ba8, 0x181513);
+            set_color(_Red, _TermBG);
             printf(statue[i]);
             printf("\n");
         }
@@ -22,8 +24,34 @@ static void command_parser(char* com) {
         set_color(0xFFBF00, 0x181513);
     }
 
-    if(strcmp(com, "clr") == 0) {
+    if(strcmp(com, "clr\0") == 0) {
         cli_clear();
+    }
+
+    if(strcmp(com, "pwd\0") == 0) {
+        set_color(_Sapphire, _TermBG);
+        printf("\n\t");
+        printf(current);
+        set_color(_Yantar, _TermBG);
+    }
+
+   /* if(strcmp(com, "ls\0") == 0) {
+        DIR dir = opendir(current);
+        
+        for(unsigned int i = 0; i <= dir.entries; ++i) {
+            FILE f;
+            if(de.type == TYPE_FILE) set_color(_Peach, _TermBG);
+            else set_color(_Blue, _TermBG);
+
+            printf("\n\t");
+            printf(f.name);
+        }
+
+        closedir(&dir);
+    }*/
+
+    if(strcmp(com, "cd\0") == 0) {
+
     }
 }
 

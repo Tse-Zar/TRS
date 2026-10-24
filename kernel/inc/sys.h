@@ -14,6 +14,8 @@
 #define SYS_CLI_CLEAR 3
 #define SYS_SET_COL   4
 #define SYS_SET_CRSR  5
+#define SYS_LS        6
+
 
 void syscall_init(void);
 void syscall_handler(_regs_t* reg);

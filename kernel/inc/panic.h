@@ -13,7 +13,7 @@
 
 void kpanic(const char* msg, const char* file, int line) __attribute__((noreturn));
 void kassert_fail(const char* expr, const char* file, int line) __attribute__((noreturn));
-void kpanic_regs(const _regs_t* reg, const char* msg) __attribute((noreturn));
+void kpanic_regs(const _regs_t* reg, const char* msg) __attribute__((noreturn));
 
 void panic_halt(void) __attribute__((noreturn));
 

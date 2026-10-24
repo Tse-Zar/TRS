@@ -23,7 +23,7 @@ typedef struct {
 int disk_init(void);
 
 unsigned int disk_count(void);
-const disk_t* get_disk(unsigned int id);
+const disk_t* disk_get(unsigned int id);
 
 int read_disk(unsigned int id, unsigned long long lba, unsigned int count, void* buf);
 int write_disk(unsigned int id, unsigned long long lba, unsigned int count, const void* buf);

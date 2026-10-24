@@ -1,6 +1,6 @@
 #include <mutex.h>
 
-void mspin_lock(spinlock_t *s) {
+void spin_lock(spinlock_t *s) {
     while(__atomic_exchange_n(&s->locked, 1, __ATOMIC_ACQUIRE)) __asm__ volatile("pause" ::: "memory");
 }
 

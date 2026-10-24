@@ -2,7 +2,7 @@
     ======================================
     = TSEZAR TSEZAR TSEZAR TSEZAR TSEZAR =
     ======================================
-    = Tsezar Relaible System   - Kernel  =
+    = Tsezar Reliable System   - Kernel  =
     = -------------------------- v 0.0.4 =
     ======================================
 */
@@ -24,6 +24,7 @@
 #include <panic.h>
 #include <sys.h>
 #include <app.h>
+//#include <process.h>
 
 boot_info_t _boot;
 
@@ -59,7 +60,7 @@ void kmain(boot_info_t* bi) {
     YES
 
     PRINT_STATUE
-    dsp_print("GDT initalized. ");
+    dsp_print("GDT initialized. ");
     YES
 
     PRINT_STATUE
@@ -158,6 +159,7 @@ void kmain(boot_info_t* bi) {
 
     dsp_set_color(_Yantar, _TermBG);
     dsp_clear();
+
     start_proc("/dsk/space/sys/term.pro");
 
     while(1) {
