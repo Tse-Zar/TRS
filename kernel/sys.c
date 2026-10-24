@@ -54,7 +54,18 @@ void syscall_handler(_regs_t* reg) {
             reg->rax = i;
             break;
         }
-
+        case SYS_CLI_CLEAR: {
+            dsp_clear();
+            break;
+        }
+        case SYS_SET_COL: {
+            dsp_set_color((unsigned long long)reg->rdx, (unsigned long long)reg->rdi);
+            break;
+        }
+        case SYS_SET_CRSR: {
+            dsp_set_cursor((unsigned long long)reg->rdx, (unsigned long long)reg->rdi);
+            break;
+        }
         default:
             reg->rax = -1;
             break;

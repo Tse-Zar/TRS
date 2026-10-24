@@ -11,12 +11,10 @@
 #include <gpt.h>
 
 static unsigned int g_disk_id  = 0;
-static unsigned int g_base_lba = 0;   /* ESP partition start (LBA) */
+static unsigned int g_base_lba = 0; 
 static Fat g_fat;
 static int g_mounted = 0;
 
-/* FAT driver работает в секторах относительно начала тома,
-   поэтому добавляем смещение раздела */
 static bool fat32_read_sect(uint8_t* buf, uint32_t sect) {
     return read_disk(g_disk_id, (unsigned long long)g_base_lba + sect, 1, buf) == 0;
 }
@@ -36,7 +34,7 @@ int fat32_init(unsigned int disk_id) {
     ops.read  = fat32_read_sect;
     ops.write = fat32_write_sect;
 
-    int err = fat_mount(&ops, 0, &g_fat, "sys");
+    int err = fat_mount(&ops, 0, &g_fat, "dsk");
     if(err != FAT_ERR_NONE) return err;
 
     g_mounted = 1;

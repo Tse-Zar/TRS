@@ -19,10 +19,10 @@ $ Текущая версия: **0.0.6**
 ```
 TRS/
 ├── bootloader/   # текущий загрузчик - UEFI
-├── kernel/       # ядро
+├── kernel/       # ядро и драйвера
 ├── libc/         # freestanding-библиотека: mem, string, mutex
-├── terminal/     # терминал (в разработке)
-├── trfs/         # файловая система (в разработке)
+├── terminal/     # терминал 
+├── trfs/         # файловая система 
 └── Makefile      # сборка, запуск и отладка
 ```
 **Реализовано:**
@@ -30,10 +30,12 @@ TRS/
 - Таблица прерываний IDT и контроллер PIC
 - Драйвер PS/2-клавиатуры
 - Система потоков ввода-вывода на ring buffer 
-- Мини-libc: `memset` / `memcpy` / `strlen` и др.
+- Мини-libc
 - Panic-screen с выводом ошибки и регистров
 - GDT (NULL, KernelCode, KernelData, UserCode, UserData)
 - FAT32 & DISK драйверы
+- Terminal
+- Запуск flat-binary файлов
 
 **Разметка диска:**
 ```

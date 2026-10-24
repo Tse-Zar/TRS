@@ -108,7 +108,7 @@ void kmain(boot_info_t* bi) {
 
     if(ferr == FAT_ERR_NONE) {
         DirInfo info;
-        if(fat_stat("/sys/space/sys/kern/kernel.bin", &info) == FAT_ERR_NONE) {
+        if(fat_stat("/dsk/space/sys/kern/kernel.bin", &info) == FAT_ERR_NONE) {
             PRINT_STATUE
             dsp_set_color(_Lavender, _Crust);
             dsp_print("kernel.bin size: ");
@@ -158,7 +158,7 @@ void kmain(boot_info_t* bi) {
 
     dsp_set_color(_Yantar, _TermBG);
     dsp_clear();
-    start_proc("/sys/space/sys/term.pro");
+    start_proc("/dsk/space/sys/term.pro");
 
     while(1) {
         __asm__ volatile ("sti; hlt");
