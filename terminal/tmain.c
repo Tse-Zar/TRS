@@ -2,56 +2,96 @@
 #include <stdbool.h>
 #include <string.h>
 #include <colors.h>
-#include <dirent.h>
+#include "inc/comands.h"
 
 static char current[100] = "space/user";
 
 static void command_parser(char* com) {
-    if(strcmp(com, "view\0") == 0) {
-        cli_clear();
-        const char* statue[24] = {"    %%%", "   =====","  &%&%%%&", "  %& < <% ",
-                                    "   &\\__/","    \\ |____","   .', ,  ()","  / -.  _)| "," |_(_.    |",
-                                    " '-'\\  )  |"," trs )    |","    /  .  ).","   /    _. |"," /'---':.-'|",
-                                    "(__.' /    /"," \\   ( /  /","  \\ /  _  | ","   \\  |  '|","   | . \\  |",
-                                    "   |(     | ","   |  \\ \\ |","    \\  )\\ |","   __)/ / \\","--\"--(_.Ooo'----" };
-        for(int i = 0; i < 24; ++i) {
-            set_crsr(55, 0);
-            set_color(_Red, _TermBG);
-            printf(statue[i]);
-            printf("\n");
+    if(!com || *com == '\0') return;
+
+    int argc = 0;
+    char* argv[17];
+
+    while(*com && argc < 16) {
+        while(*com == ' ' || *com == '\t' || *com == '\n') com++;
+        if(*com == '\0') break;
+
+        if(*com == '"') {
+            com++;
+            argv[argc++] = com;
+            while(*com && *com != '"') com++;
+        } else {
+            argv[argc++] = com;
+            while(*com && *com != ' ' && *com != '\t' && *com != '\n' && *com != '\r') com++;
         }
-        printf("==============================================================================================================================");
-        set_color(0xFFBF00, 0x181513);
+
+        if(*com) {
+            *com = '\0';
+            com++;
+        }
     }
 
-    if(strcmp(com, "clr\0") == 0) {
+    argv[argc] = NULL;
+    if(argc == 0) return;
+
+    if(strcmp(argv[0], "view") == 0) {
+        if(argc > 1) { printf("t3rm: too many arguments"); return;}
+
+        view();
+    } else if(strcmp(argv[0], "clr") == 0) {
+        if(argc > 1) { printf("t3rm: too many arguments"); return;}
+
         cli_clear();
-    }
+    } else if(strcmp(argv[0], "pwd") == 0) {
+        if(argc > 1) { printf("t3rm: too many arguments"); return;}
 
-    if(strcmp(com, "pwd\0") == 0) {
         set_color(_Sapphire, _TermBG);
         printf("\n\t");
         printf(current);
         set_color(_Yantar, _TermBG);
-    }
-
-   /* if(strcmp(com, "ls\0") == 0) {
-        DIR dir = opendir(current);
-        
-        for(unsigned int i = 0; i <= dir.entries; ++i) {
-            FILE f;
-            if(de.type == TYPE_FILE) set_color(_Peach, _TermBG);
-            else set_color(_Blue, _TermBG);
-
-            printf("\n\t");
-            printf(f.name);
+    } else if(strcmp(argv[0], "wh") == 0) {
+        char path[128] = "/dsk/";
+        if(argc > 1) {
+            strcat(path, argv[1]);
+        } else {
+            strcat(path, current);
         }
+        wh(path);
+        
+    } else if(strcmp(argv[0], "cd") == 0) {
+        if(argc < 2) {
+            strcpy(current, "space/user");
+        } else {
+            char* trgt = argv[1];
 
-        closedir(&dir);
-    }*/
-
-    if(strcmp(com, "cd\0") == 0) {
-
+            if(strlen(trgt) == 1 && trgt[0] == '.') return;
+            if(strcmp(trgt, "..") == 0) {
+                char* last = strrchr(current, '/');
+                if(last != NULL) {
+                    *last = '\0';
+                }
+            } else if(trgt[0] == '/') {
+                if(strlen(trgt) < sizeof(current)) {
+                    strcpy(current, trgt + 1);
+                } else {
+                    printf("t3rm: path too long");
+                }
+            } else {
+                if(strlen(current) + 1 + strlen(trgt) < sizeof(current)) {
+                    if(strlen(current) > 0 && current[strlen(current) - 1] != '/') {
+                        strcat(current, "/");
+                    }
+                    strcat(current, trgt);
+                }
+            }
+        }
+    } else if(strcmp(argv[0], "help") == 0) {
+        if(argc > 1) { printf("t3rm: too many arguments"); return;}
+        printf("\n");
+        help();
+    }
+    else {
+        printf("\nt3rm: unknown command");
     }
 }
 
@@ -63,7 +103,7 @@ int main() {
         char command[256];
         printf(current);
         printf(" * ");
-        scanf(command, 16);
+        scanf(command, 256);
         command_parser(command);
         printf("\n");
     }

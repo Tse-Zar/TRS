@@ -6,7 +6,7 @@
     ======================================
 */
 
-#include "../inc/string.h"
+#include <string.h>
 #include <stdint.h>
 
 void* memset(void* dst, int val, size_t len) {
@@ -122,4 +122,35 @@ int strncmp(const char* a, const char* b, size_t len) {
     }
 
     return *(unsigned const char*)a - *(unsigned const char*)b;
+}
+
+char* strcat(char* dst, const char* src) {
+    char* ptr = dst;
+
+    while(*dst != '\0') dst++;
+
+    while((*dst++ = *src++)) {}
+
+    return ptr;
+}
+
+char* strrchr(const char *str, int ch) {
+    char* last = NULL;
+
+    do {
+        if(*str == (unsigned char)ch) {
+            last = (char*)str;
+        }
+    } while(*str++);
+
+    return last;
+}
+
+char* strcpy(char *dst, const char *src) {
+    if(!dst || !src) return NULL;
+    
+    char* ptr = dst;
+
+    while((*dst++ = *src++)) {}
+    return ptr;
 }

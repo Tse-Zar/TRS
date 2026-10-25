@@ -61,7 +61,7 @@ KLDFLAGS := -nostdlib -z max-page-size=0x1000 -z noexecstack -T kernel/linker.ld
 
 # ---------------- terminal (app) flags ----------------
 # kernel/inc is here for app.h (.pro header layout); libc/inc for the freestanding libc
-TINC     := -Iterminal/inc -Ilibc/inc -Ikernel/inc -Ibootloader/uefi/inc
+TINC     := -Iterminal/inc -Ilibc/inc -Ibootloader/uefi/inc -Itrfs/fat32
 TCFLAGS  := -ffreestanding -m64 -mno-red-zone -mno-mmx -mno-sse -mno-sse2 \
             -mcmodel=small -fno-pie -fno-stack-protector \
             -fno-asynchronous-unwind-tables -fno-omit-frame-pointer \
@@ -82,7 +82,7 @@ BUILD   := build
 DISK    := $(BUILD)/trs.img
 DISK_SZ := 64M
 ESP_IMG := $(BUILD)/esp.img
-ESP_KB  := 63488   # 62 MiB - exactly the 1MiB..63MiB ESP partition
+ESP_KB  := 63488 
 ESP_OFF := 1M
 
 # ---------------- files ----------------
@@ -95,7 +95,7 @@ FONT_OBJ  := $(BUILD)/terminus.o
 TERM      := $(BUILD)/term.elf
 TERM_PRO  := $(BUILD)/term.pro
 
-LIBC_KSRC := $(filter-out libc/stdio.c libc/syscall.c,$(wildcard libc/*.c))
+LIBC_KSRC := $(filter-out libc/stdio.c libc/syscall.c libc/dirent.c,$(wildcard libc/*.c))
 
 KSRC := $(wildcard kernel/*.c kernel/driver/*.c kernel/cpu/*.c trfs/fat32/*.c) $(LIBC_KSRC)
 KASM := $(wildcard kernel/*.asm kernel/cpu/*.asm)
@@ -105,11 +105,9 @@ KOBJ := $(patsubst %.c,$(BUILD)/%.o,$(KSRC)) \
         $(FONT_OBJ)
 BOBJ := $(BUILD)/boot/boot.o
 
-# app objects: terminal sources + the libc pieces it needs
-# (libc objects are shared with the kernel build; flags are identical except include paths)
 TSRC := $(wildcard terminal/*.c)
 TASM := $(wildcard terminal/*.asm)
-TLIB := $(BUILD)/libc/string.o $(BUILD)/libc/stdio.o $(BUILD)/libc/syscall.o
+TLIB := $(BUILD)/libc/string.o $(BUILD)/libc/stdio.o $(BUILD)/libc/syscall.o $(BUILD)/libc/dirent.o
 
 TOBJ := $(patsubst %.c,$(BUILD)/%.o,$(TSRC)) \
         $(patsubst %.asm,$(BUILD)/%.o,$(TASM)) \
@@ -152,8 +150,6 @@ $(KERNELBIN): $(KERNEL)
 	$(OBJCOPY) -O binary $< $@
 	@echo "[kernel] flat binary: $@ ($$(stat -c%s $@) bytes)"
 
-# --- terminal: ELF -> .pro (TRSP header baked in by terminal/linker.ld) ---
-# terminal/*.o must be built with TCFLAGS, so they get their own pattern rules
 $(BUILD)/terminal/%.o: terminal/%.c | $(DIRS)
 	@mkdir -p $(dir $@)
 	$(CC) $(TCFLAGS) -c $< -o $@

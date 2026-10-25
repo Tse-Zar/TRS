@@ -2,6 +2,17 @@
 #include <image.h>
 #include <keyboard.h>
 #include <stream.h>
+#include <fat32.h>
+#include <string.h>
+
+#define ABI_NAME_MAX 32
+
+typedef struct {
+    char          name[ABI_NAME_MAX + 1];
+    unsigned int  size;
+    unsigned char attr;
+    unsigned char name_len;
+} AbiDirInfo;
 
 void syscall_init(void) {
     isr_install(SYSCALL_VECTOR, syscall_handler);
@@ -64,6 +75,35 @@ void syscall_handler(_regs_t* reg) {
         }
         case SYS_SET_CRSR: {
             dsp_set_cursor((unsigned long long)reg->rdx, (unsigned long long)reg->rdi);
+            break;
+        }
+        case SYS_OPENDIR: {
+            const char* path = (const char*)reg->rdx;
+            reg->rax = (unsigned long long)(long long)(path ? fat32_dir_open(path) : FAT_ERR_PARAM);
+            break;
+        }
+        case SYS_READDIR: {
+            int slot = (int)(long long)reg->rdx;
+            AbiDirInfo* out = (AbiDirInfo*)reg->rdi;
+            if(!out) { reg->rax = (unsigned long long)(long long)FAT_ERR_PARAM; break; }
+            DirInfo info;
+            int rc = fat32_dir_read(slot, &info);
+            if(rc != FAT_ERR_NONE) {
+                reg->rax = rc;
+                break;
+            }
+            unsigned int n = info.name_len > ABI_NAME_MAX ? ABI_NAME_MAX : info.name_len;
+            memset(out->name, 0, sizeof(out->name));
+            memcpy(out->name, info.name, n);
+            out->size     = info.size;
+            out->attr     = info.attr;
+            out->name_len = (unsigned int)n;
+            reg->rax = 0;
+            break;
+        }
+        case SYS_CLOSEDIR: {
+            int slot = (int)(long long)reg->rdx;
+            reg->rax = (unsigned long long)(long long)fat32_dir_close(slot);
             break;
         }
         default:

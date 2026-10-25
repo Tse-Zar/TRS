@@ -13,5 +13,8 @@
 
 int fat32_init(unsigned int disk_id);
 Fat* fat32_get(void);
+int fat32_dir_open(const char* path);
+int fat32_dir_read(int slot, DirInfo* info);
+int fat32_dir_close(int slot);
 
 #endif // FAT32_H
