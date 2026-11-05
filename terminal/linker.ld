@@ -2,31 +2,39 @@ OUTPUT_FORMAT(elf64-x86-64)
 OUTPUT_ARCH(i386:x86-64)
 ENTRY(_start)
 
-PRO_BASE = 0x400000;
+PHDRS
+{
+    text PT_LOAD FLAGS(5);
+    data PT_LOAD FLAGS(6);
+}
 
 SECTIONS
 {
-    . = PRO_BASE;
+    . = 0x0;
     __term_start = .;
 
     .text : {
         *(.text.entry)
         *(.text)
         *(.text.*)
-    }
+    } :text
 
     . = ALIGN(4K);
     .rodata : {
         *(.rodata)
         *(.rodata.*)
-    }
+    } :text
 
     . = ALIGN(4K);
     .data : {
         *(.data)
         *(.data.*)
         *(.data.rel.ro*)
-    }
+    } :data
+
+    . = ALIGN(8);
+    .got : { *(.got) *(.got.plt) } :data
+    .rela.dyn : { *(.rela.dyn) *(.rela.*) }
 
     __term_file_end = .;
 
@@ -37,7 +45,7 @@ SECTIONS
         *(.bss.*)
         *(COMMON)
         __bss_end = .;
-    }
+    } :data
 
     . = ALIGN(4K);
     __term_end = .;

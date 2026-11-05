@@ -1,149 +1,108 @@
-/*
-    ======================================
-    = TSEZAR TSEZAR TSEZAR TSEZAR TSEZAR =
-    = ---------------------------------- =
-    = Physical memory manager ---------- =
-    = bitmap built from the UEFI map --- =
-    ======================================
-*/
-
 #include <memory_paging.h>
-#include <panic.h>
-#include <string.h>
 
-extern char __kernel_start[];
-extern char __kernel_end[];
+static unsigned long long used_pages   = 0ULL;
+static unsigned long long total_pages  = 0ULL;
+static unsigned long long  cur = 0ULL;
 
-static unsigned char*     bitmap = 0;
-static unsigned long long bitmap_bytes = 0;
-static unsigned long long total_pages = 0;
-static unsigned long long used_pages = 0;
-static unsigned long long usable_pages = 0;
-static unsigned long long last_alloc = 0;
+static unsigned long long* bitmap;
 
-static inline void bitmap_set(unsigned long long p) { bitmap[p >> 3] |= (unsigned char)(1u << (p & 7)); }
-static inline void bitmap_clear(unsigned long long p) { bitmap[p >> 3] &= (unsigned char)~(1u << (p & 7)); }
-static inline int  bitmap_test(unsigned long long p) { return bitmap[p >> 3] >> (p & 7); }
-
-static unsigned long long align_up(unsigned long long v, unsigned long long a) {
-    return (v + a - 1) & ~(a - 1);
-}
-
-static mem_desc_t* desc_at(boot_info_t* bi, unsigned long long i) {
-    return (mem_desc_t*)((unsigned char*)(unsigned long long)bi->mmap_addr + i * bi->mmap_dsize);
-}
-
-static void reserv_range(unsigned long long start, unsigned long long size) {
-    unsigned long long first = start / PAGE_SIZE;
-    unsigned long long last = align_up(start + size, PAGE_SIZE) / PAGE_SIZE;
-
-    for(unsigned long long p = first; p < last && p < total_pages; ++p) {
-        if(!bitmap_test(p)) { bitmap_set(p); used_pages++; }
-    } 
-}
+#define BM_GET(p) ((bitmap[(p) >> 6] >> ((p) & 63)) & 1ULL)
+#define BM_SET(p) (bitmap[(p) >> 6] |= (1ULL << ((p) & 63)))
+#define BM_CLR(p) (bitmap[(p) >> 6] &= ~(1ULL << ((p) & 63)))
 
 void pmm_init(boot_info_t *bi) {
-    if(bi->mmap_dsize == 0 || bi->mmap_size == 0) {
-        kpanic("Memory map is missing", __FILE__, __LINE__);
+    bitmap = (unsigned long long*)(bi->bitmap_vaddr);
+    total_pages = bi->total_pages;
+
+    if((total_pages + 7) >> 3 > bi->bitmap_size) 
+        total_pages = (bi->bitmap_size * 8) & ~63ULL;
+
+    for(unsigned long long p = 0; p < total_pages; ++p) {
+        if(BM_GET(p)) used_pages++;
     }
-
-    unsigned long long count = bi->mmap_size / bi->mmap_dsize;
-
-    unsigned long long max_addr = 0;
-    for(unsigned long long i = 0; i < count; ++i) {
-        mem_desc_t* desc = desc_at(bi, i);
-        if(desc->type != ConventionalMemory) continue;
-
-        unsigned long long end = desc->phys + desc->pages * PAGE_SIZE;
-        if(end > max_addr) max_addr = end;
-    }
-
-    if(max_addr == 0) kpanic("No convetnional memory found", __FILE__, __LINE__);
-
-    total_pages = max_addr / PAGE_SIZE;
-    bitmap_bytes = align_up(total_pages / 8 + 1, PAGE_SIZE);
-
-    unsigned long long best = 0, best_pages = 0;
-    for(unsigned long long i = 0; i < count; ++i) {
-        mem_desc_t* d = desc_at(bi, i);
-        if(d->type != ConventionalMemory) continue;
-        if(d->pages > best_pages) {
-            best_pages = d->pages;
-            best = d->phys;
-        }
-    }
-
-    bitmap = (unsigned char*)align_up(best, PAGE_SIZE);
-    if((unsigned long long)bitmap + bitmap_bytes > best + best_pages * PAGE_SIZE) {
-        kpanic("Bitmap does not fit into memory", __FILE__, __LINE__);
-    }
-
-    memset(bitmap, 0xFF, bitmap_bytes);
-
-    for(unsigned long long i = 0; i < count; ++i) {
-        mem_desc_t* d = desc_at(bi, i);
-        if(d->type != ConventionalMemory) continue;
-
-        unsigned long long first = d->phys / PAGE_SIZE;
-        for(unsigned long long p = first; p < first + d->pages && p < total_pages; ++p) {
-            bitmap_clear(p);
-        }
-
-        usable_pages += d->pages;
-    }
-
-    reserv_range(0, 0x100000);
-    reserv_range(0x400000, 0x100000);
-    reserv_range((unsigned long long)__kernel_start, (unsigned long long)(__kernel_end - __kernel_start));
-    reserv_range((unsigned long long)bitmap, bitmap_bytes);
-    reserv_range(bi->fb.base, bi->fb.size);
-    reserv_range(bi->stack_top - 128ULL * 1024, 128ULL * 1024);
-    reserv_range(bi->mmap_addr, bi->mmap_size);
-    reserv_range(0x400000, 0x100000);
 }
 
-void* pmm_alloc_pages(unsigned long long  pages) {
-    if (!bitmap || pages == 0) return NULL;
+void* alloc_pages(unsigned long long n) {
+    if(!n) return (void*)0;
 
-    unsigned long long consecutive_pages = 0;
-    unsigned long long start_page = 0;
-
-    for (unsigned long long p = 0; p < total_pages; ++p) {
-        if (!bitmap_test(p)) {
-            if (consecutive_pages == 0) {
-                start_page = p; 
+    for(int pass = 0; pass < 2; ++pass) {
+        unsigned long long run = 0;
+        for(unsigned long long p = cur; p < total_pages; ++p) {
+            if(BM_GET(p)) {
+                run = 0;
+                continue;
             }
-            consecutive_pages++;
-
-            if (consecutive_pages == pages) {
-                for (unsigned long long i = start_page; i <= p; ++i) {
-                    bitmap_set(i);
+            if(++run == n) {
+                unsigned long long start = p - n + 1;
+                for(unsigned long long i = 0; i < n; ++i) {
+                    BM_SET(start + i);
                 }
-                
-                used_pages += pages;
-                last_alloc = p + 1;
-                
-                return (void*)(start_page * PAGE_SIZE);
+
+                used_pages += n;
+                cur = p + 1;
+                return (void*)(start * PAGE_SIZE);
             }
-        } else {
-            consecutive_pages = 0;
         }
+
+        cur = 0;
     }
+    return (void*)0;
+}
 
-    return NULL; 
+void make_page_executable(unsigned long long vaddr) {
+    unsigned long long cr3;
+    __asm__ volatile("mov %%cr3, %0" : "=r"(cr3));
+    unsigned long long* pml4 = (unsigned long long*)(cr3 & ~0xFFFULL);
+
+    unsigned long long pml4_idx = (vaddr >> 39) & 0x1FF;
+    unsigned long long pdpt_idx = (vaddr >> 30) & 0x1FF;
+    unsigned long long pd_idx   = (vaddr >> 21) & 0x1FF;
+    unsigned long long pt_idx   = (vaddr >> 12) & 0x1FF;
+
+    if (!(pml4[pml4_idx] & 1)) return;
+    unsigned long long* pdpt = (unsigned long long*)(pml4[pml4_idx] & 0x000FFFFFFFFFF000ULL);
+
+    if (!(pdpt[pdpt_idx] & 1)) return;
+    pdpt[pdpt_idx] &= ~(1ULL << 63); 
+    if (pdpt[pdpt_idx] & (1ULL << 7)) return;
+
+    unsigned long long* pd = (unsigned long long*)(pdpt[pdpt_idx] & 0x000FFFFFFFFFF000ULL);
+
+    if (!(pd[pd_idx] & 1)) return;
+    pd[pd_idx] &= ~(1ULL << 63);
+    if (pd[pd_idx] & (1ULL << 7)) return;
+
+    unsigned long long* pt = (unsigned long long*)(pd[pd_idx] & 0x000FFFFFFFFFF000ULL);
+
+    if (!(pt[pt_idx] & 1)) return;
+    pt[pt_idx] &= ~(1ULL << 63);
+
+    __asm__ volatile("invlpg (%0)" :: "r"(vaddr) : "memory");
 }
 
 
-void pmm_free_page(void *page) {
-    if(!bitmap) return;
-
+void free_page(void* page) {
     unsigned long long p = (unsigned long long)page / PAGE_SIZE;
-    if(p >= total_pages || !bitmap_test(p)) return;
-
-    bitmap_clear(p);
+    if(p >= total_pages || !BM_GET(p)) return;
+    
+    BM_CLR(p);
     used_pages--;
-    if(p < last_alloc) last_alloc = p;
+    if(p < cur) cur = p;
 }
 
-unsigned long long pmm_usable_pages(void) { return usable_pages; }
-unsigned long long pmm_used_pages(void) { return used_pages; }
+void* vmm_init(void) {
+    unsigned long long cr3;
+    __asm__ volatile("mov %%cr3, %0" : "=r"(cr3));
+    return (void*)(cr3 & ~0xFFFULL);
+}
+unsigned long long pmm_usable_pages(void) {
+    return total_pages - used_pages;
+}
+
+unsigned long long pmm_total_pages(void) {
+    return total_pages;
+}
+
+unsigned long long pmm_used_pages(void) {
+    return used_pages;
+}

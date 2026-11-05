@@ -10,7 +10,7 @@ const char comand_disc[COMANDS_COUNT][256] = {"show this text\n", "show represen
                                               "what`s here - info abot current directory\n"};
 int view(void) {
     cli_clear();
-        const char* statue[24] = {"    %%%", "   =====","  &%&%%%&", "  %& < <% ",
+        const char statue[24][24] = {"    %%%", "   =====","  &%&%%%&", "  %& < <% ",
                                     "   &\\__/","    \\ |____","   .', ,  ()","  / -.  _)| "," |_(_.    |",
                                     " '-'\\  )  |"," trs )    |","    /  .  ).","   /    _. |"," /'---':.-'|",
                                     "(__.' /    /"," \\   ( /  /","  \\ /  _  | ","   \\  |  '|","   | . \\  |",
@@ -58,3 +58,7 @@ int help(void) {
     }
     return 0;
 }
+
+//int start(const char *name) {
+//    create_process(name, USER_MODE);
+//}

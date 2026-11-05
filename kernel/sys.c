@@ -4,6 +4,7 @@
 #include <stream.h>
 #include <fat32.h>
 #include <string.h>
+#include <app.h>
 
 #define ABI_NAME_MAX 32
 
@@ -22,7 +23,6 @@ void syscall_handler(_regs_t* reg) {
     switch (reg->rax) {
         case SYS_WRITE:
             if(!reg->rdx) return;
-
             dsp_print((const char*)reg->rdx);
             break;
 
@@ -104,6 +104,21 @@ void syscall_handler(_regs_t* reg) {
         case SYS_CLOSEDIR: {
             int slot = (int)(long long)reg->rdx;
             reg->rax = (unsigned long long)(long long)fat32_dir_close(slot);
+            break;
+        }
+        case SYS_DELAY: {
+            unsigned long long ms = (unsigned long long)reg->rdx;
+            for(unsigned long long i = 0; i < ms; ++i) {
+                for(unsigned long long j = 0; j < 200000; ++j) {
+                    __asm__ volatile(""::: "memory");
+                }
+            }
+            
+            reg->rax = 0;
+            break;
+        }
+        case SYS_START_PROC: {
+            start_proc((const char*)reg->rdx);
             break;
         }
         default:

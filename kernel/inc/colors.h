@@ -1,7 +1,6 @@
 #ifndef COLOR_H
 #define COLOR_H
 
-
 #define _Rosewater   0xf5e0dc
 #define _Flamingo    0xf2cdcd
 #define _Pink        0xf5c2e7
@@ -16,24 +15,10 @@
 #define _Sapphire    0x74c7ec
 #define _Blue        0x89b4fa
 #define _Lavender    0xb4befe
-#define _Text        0xcdd6f4
-#define _Subtext1    0xbac2de
-#define _Subtext0    0xa6adc8
-#define _Overlay2    0x9399b2
-#define _Overlay1    0x7f849c
-#define _Overlay0    0x6c7086
-#define _Surface2    0x585b70
-#define _Surface1    0x43465e
-#define _Surface0    0x313244
-#define _Base        0x1e1e2e
 #define _Mantle      0x181825
 #define _Crust       0x11111b
 #define _DarkerCrust 0x0b0b10
-#define _BrightText  0xf5f5f5
 #define _PureWhite   0xffffff
-#define _NordPolar1  0x2e3440
-#define _NordPolar2  0x3b4252
-#define _NordPolar3  0x4c566a
 #define _Yantar      0xFFBF00
 #define _TermBG      0x181513
 

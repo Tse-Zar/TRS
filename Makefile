@@ -20,7 +20,7 @@ DD      := dd
 TRUNC   := truncate
 CP      := cp
 
-# ---------------- gnu-efi (auto-detect: Arch/Debian -> /usr/lib, Fedora -> /usr/lib64/gnuefi) ----------------
+# ---------------- gnu-efi ----------------
 GNUEFI_DIRS ?= /usr/lib /usr/lib64 /usr/lib/gnuefi /usr/lib64/gnuefi
 EFICRT0 := $(firstword $(wildcard $(addsuffix /crt0-efi-x86_64.o,$(GNUEFI_DIRS))))
 EFILDS  := $(firstword $(wildcard $(addsuffix /elf_x86_64_efi.lds,$(GNUEFI_DIRS))))
@@ -30,7 +30,7 @@ EFIINC  ?= $(firstword $(wildcard /usr/include/efi))
 
 # gnu-efi is needed only for the boot loader; 'make clean' / 'make kernel' / 'make term' work without it
 GOALS := $(if $(MAKECMDGOALS),$(MAKECMDGOALS),all)
-ifneq ($(filter all boot disk run debug,$(GOALS)),)
+ifneq ($(filter all boot disk run debug log,$(GOALS)),)
 ifeq ($(and $(EFICRT0),$(EFILDS),$(EFIINC)),)
 $(error gnu-efi not found: install the 'gnu-efi' package (crt0-efi-x86_64.o, elf_x86_64_efi.lds, headers))
 endif
@@ -45,16 +45,16 @@ OVMF_CODE := $(firstword $(wildcard \
                 /usr/share/ovmf/OVMF.fd))
 OVMF_VARS_SRC := $(firstword $(wildcard \
                 /usr/share/ovmf/x64/OVMF_VARS.4m.fd \
-                /usr/share/ovmf/x64/OVMF_VARS.fd \
+                /usr/share/ovmf/OVMF_VARS.fd \
                 $(subst OVMF_CODE,OVMF_VARS,$(OVMF_CODE))))
 
 # ---------------- kernel flags ----------------
 KINC    := -Ikernel/inc -Ilibc/inc -Ibootloader/uefi/inc -Itrfs/fat32
 KCFLAGS := -ffreestanding -m64 -mno-red-zone -mno-mmx -mno-sse -mno-sse2 \
            -fno-builtin -fno-builtin-memcpy -fno-builtin-memset \
-           -mcmodel=small -fno-pie -fno-stack-protector \
+           -mcmodel=kernel -fno-pie -fno-stack-protector \
            -fno-asynchronous-unwind-tables -fno-omit-frame-pointer \
-           -fcf-protection=none -fno-builtin\
+           -fcf-protection=none \
            -O2 -g -Wall -Wextra -MMD -MP $(KINC)
 
 KLDFLAGS := -nostdlib -z max-page-size=0x1000 -z noexecstack -T kernel/linker.ld
@@ -63,11 +63,13 @@ KLDFLAGS := -nostdlib -z max-page-size=0x1000 -z noexecstack -T kernel/linker.ld
 # kernel/inc is here for app.h (.pro header layout); libc/inc for the freestanding libc
 TINC     := -Iterminal/inc -Ilibc/inc -Ibootloader/uefi/inc -Itrfs/fat32
 TCFLAGS  := -ffreestanding -m64 -mno-red-zone -mno-mmx -mno-sse -mno-sse2 \
-            -mcmodel=small -fno-pie -fno-stack-protector \
+            -mcmodel=small -fPIE -fno-stack-protector \
             -fno-asynchronous-unwind-tables -fno-omit-frame-pointer \
             -fcf-protection=none \
             -O2 -g -Wall -Wextra -MMD -MP $(TINC)
-TLDFLAGS := -nostdlib -z max-page-size=0x1000 -z noexecstack -T terminal/linker.ld
+TLDFLAGS := -nostdlib -static -pie -z noexecstack -T terminal/linker.ld
+# --- caravan app flags ---
+CARLDFLAGS := -nostdlib -static -pie -z noexecstack -T base/caravan/linker.ld
 
 # ---------------- uefi loader flags ----------------
 BCFLAGS := -ffreestanding -m64 -mno-red-zone -DEFI_FUNCTION_WRAPPER \
@@ -95,7 +97,7 @@ FONT_OBJ  := $(BUILD)/terminus.o
 TERM      := $(BUILD)/term.elf
 TERM_PRO  := $(BUILD)/term.pro
 
-LIBC_KSRC := $(filter-out libc/stdio.c libc/syscall.c libc/dirent.c,$(wildcard libc/*.c))
+LIBC_KSRC := $(filter-out libc/stdio.c libc/syscall.c libc/dirent.c libc/stdlib.c,$(wildcard libc/*.c))
 
 KSRC := $(wildcard kernel/*.c kernel/driver/*.c kernel/cpu/*.c trfs/fat32/*.c) $(LIBC_KSRC)
 KASM := $(wildcard kernel/*.asm kernel/cpu/*.asm)
@@ -104,26 +106,38 @@ KOBJ := $(patsubst %.c,$(BUILD)/%.o,$(KSRC)) \
         $(patsubst %.asm,$(BUILD)/%.o,$(KASM)) \
         $(FONT_OBJ)
 BOBJ := $(BUILD)/boot/boot.o
+TBOBJ := $(BUILD)/boot/tramp.o
 
 TSRC := $(wildcard terminal/*.c)
 TASM := $(wildcard terminal/*.asm)
-TLIB := $(BUILD)/libc/string.o $(BUILD)/libc/stdio.o $(BUILD)/libc/syscall.o $(BUILD)/libc/dirent.o
+TLIB_SRC := libc/string.c libc/stdio.c libc/syscall.c libc/dirent.c libc/stdlib.c
+TLIB     := $(patsubst libc/%.c,$(BUILD)/app_libc/%.o,$(TLIB_SRC))
 
 TOBJ := $(patsubst %.c,$(BUILD)/%.o,$(TSRC)) \
         $(patsubst %.asm,$(BUILD)/%.o,$(TASM)) \
         $(TLIB)
 
+# --- caravan app ---
+CSRC    := $(wildcard base/caravan/*.c)
+CASM    := $(wildcard base/caravan/*.asm)
+CAR_OBJ := $(patsubst %.c,$(BUILD)/%.o,$(CSRC)) \
+           $(patsubst %.asm,$(BUILD)/%.o,$(CASM)) \
+           $(TLIB)
+CARAVAN := $(BUILD)/caravan.elf
+CAR_PRO := $(BUILD)/caravan.pro
+
 DIRS := $(BUILD) $(BUILD)/boot
 
 # ---------------- targets ----------------
-.PHONY: all kernel boot disk term run debug clean log
-.SECONDARY: $(KOBJ) $(BOBJ) $(TOBJ)
+.PHONY: all caravan boot disk run debug clean log kernel term
+.SECONDARY: $(KOBJ) $(BOBJ) $(TOBJ) $(CAR_OBJ)
 all: disk
 
 term:   $(TERM_PRO)
 kernel: $(KERNELBIN)
 boot:   $(BOOT_EFI)
 disk:   $(DISK)
+caravan: $(CAR_PRO)
 
 # --- common object rules ---
 $(DIRS):
@@ -132,7 +146,7 @@ $(DIRS):
 $(BUILD)/%.o: %.c | $(DIRS)
 	@mkdir -p $(dir $@)
 	$(CC) $(KCFLAGS) -c $< -o $@
-
+	
 $(BUILD)/%.o: %.asm | $(DIRS)
 	@mkdir -p $(dir $@)
 	$(NASM) -f elf64 $< -o $@
@@ -147,7 +161,7 @@ $(KERNEL): $(KOBJ) kernel/linker.ld | $(DIRS)
 	@echo "[kernel] linked: $@"
 
 $(KERNELBIN): $(KERNEL)
-	$(OBJCOPY) -O binary $< $@
+	$(OBJCOPY) -O binary -j .head -j .text -j .text_rest -j .rodata -j .data $< $@
 	@echo "[kernel] flat binary: $@ ($$(stat -c%s $@) bytes)"
 
 $(BUILD)/terminal/%.o: terminal/%.c | $(DIRS)
@@ -158,23 +172,30 @@ $(BUILD)/terminal/%.o: terminal/%.asm | $(DIRS)
 	@mkdir -p $(dir $@)
 	$(NASM) -f elf64 $< -o $@
 
+$(BUILD)/app_libc/%.o: libc/%.c | $(DIRS)
+	@mkdir -p $(dir $@)
+	$(CC) $(TCFLAGS) -c $< -o $@
+
 $(TERM): $(TOBJ) terminal/linker.ld | $(DIRS)
 	$(LD) $(TLDFLAGS) $(TOBJ) -o $@
 	@echo "[term] linked: $@"
 
-# .bss is dropped on purpose: file size == pro_hdr_t.image_size,
-# start_process() zeroes [image_size, mem_size) itself
 $(TERM_PRO): $(TERM)
 	$(OBJCOPY) -O binary --remove-section=.bss $< $@
 	@echo "[term] packed: $@ ($$(stat -c%s $@) bytes)"
 
 # --- uefi boot: ELF -> PE32+ .EFI ---
-$(BOBJ): bootloader/uefi/boot.c | $(DIRS)
+$(BUILD)/boot/boot.o: bootloader/uefi/boot.c | $(DIRS)
 	@mkdir -p $(dir $@)
 	$(CC) $(BCFLAGS) -c $< -o $@
 
-$(BOOT_ELF): $(BOBJ) $(EFICRT0) $(EFILDS) | $(DIRS)
-	$(LD) $(BLDFLAGS) $(EFICRT0) $(BOBJ) $(EFILIBS) -o $@
+$(BUILD)/boot/tramp.o: bootloader/uefi/tramp.asm | $(DIRS)
+	@mkdir -p $(dir $@)
+	$(NASM) -f elf64 $< -o $@
+
+$(BOOT_ELF): $(BOBJ) $(TBOBJ) $(EFICRT0) $(EFILDS) | $(DIRS)
+	$(LD) $(BLDFLAGS) $(EFICRT0) $(BOBJ) $(TBOBJ) $(EFILIBS) -o $@
+
 
 $(BOOT_EFI): $(BOOT_ELF)
 	$(OBJCOPY) -j .text -j .sdata -j .data -j .dynamic -j .rodata \
@@ -182,6 +203,22 @@ $(BOOT_EFI): $(BOOT_ELF)
            -j .rel* -j .rela* -j .areloc -j .reloc \
            -O efi-app-x86_64 $< $@
 	@echo "[boot] $@"
+
+$(BUILD)/base/caravan/%.o: base/caravan/%.c | $(DIRS)
+	@mkdir -p $(dir $@)
+	$(CC) $(TCFLAGS) -c $< -o $@
+
+$(BUILD)/base/caravan/%.o: base/caravan/%.asm | $(DIRS)
+	@mkdir -p $(dir $@)
+	$(NASM) -f elf64 $< -o $@
+
+$(CARAVAN): $(CAR_OBJ) base/caravan/linker.ld | $(DIRS)
+	$(LD) $(CARLDFLAGS) $(CAR_OBJ) -o $@
+	@echo "[caravan] linked: $@"
+
+$(CAR_PRO): $(CARAVAN)
+	$(OBJCOPY) -O binary --remove-section=.bss $< $@
+	@echo "[caravan] packed: $@ ($$(stat -c%s $@) bytes)"
 
 # --- GPT disk with FAT32 ESP ---
 # on-disk tree (matches README):
@@ -191,7 +228,7 @@ $(BOOT_EFI): $(BOOT_ELF)
 #   /space/user/
 #   /dump/
 #   /sand/
-$(DISK): $(BOOT_EFI) $(KERNELBIN) $(TERM_PRO)
+$(DISK): $(BOOT_EFI) $(KERNELBIN) $(TERM_PRO) $(CAR_PRO)
 	@echo "[disk] GPT + FAT32 ESP -> $@"
 	rm -f $(ESP_IMG)
 	$(MKFAT) -F32 -C $(ESP_IMG) $(ESP_KB)
@@ -205,12 +242,13 @@ $(DISK): $(BOOT_EFI) $(KERNELBIN) $(TERM_PRO)
 	$(MCOPY) -i $(ESP_IMG) $(BOOT_EFI) ::/EFI/BOOT/BOOTX64.EFI
 	$(MCOPY) -i $(ESP_IMG) $(KERNELBIN) ::/space/sys/kern/kernel.bin
 	$(MCOPY) -i $(ESP_IMG) $(TERM_PRO) ::/space/sys/term.pro
+	$(MCOPY) -i $(ESP_IMG) $(CAR_PRO) ::/space/user/caravan.pro
 	$(DD) if=$(ESP_IMG) of=$(DISK) bs=$(ESP_OFF) seek=1 conv=notrunc status=none
 	@echo "[disk] done: $@"
 
 # --- run / debug (OVMF) ---
 ifeq ($(strip $(OVMF_CODE)),)
-run debug:
+run debug log:
 	$(error OVMF firmware not found: install the 'ovmf' (Arch/Debian) or 'edk2-ovmf' (Fedora) package)
 else
 RUN_VARS  := $(BUILD)/OVMF_VARS.fd
@@ -221,17 +259,18 @@ RUN_FLAGS := -drive if=pflash,format=raw,readonly=on,file=$(OVMF_CODE) \
              -drive if=pflash,format=raw,file=$(RUN_VARS)
 
 run: $(DISK) $(RUN_VARS)
-	$(QEMU) -m 512M -vga std -global VGA.xres=1280 -global VGA.yres=720 -display gtk,zoom-to-fit=on $(RUN_FLAGS) -drive format=raw,media=disk,file=$(DISK)
+	$(QEMU) -m 2G -vga std -global VGA.xres=1280 -global VGA.yres=720 -display gtk,zoom-to-fit=on $(RUN_FLAGS) -drive format=raw,media=disk,file=$(DISK)
 
 log: $(DISK) $(RUN_VARS)
-	GDK_BACKEND=x11 $(QEMU) -m 512M -serial file:qemu.log -no-reboot -no-shutdown -d cpu_reset -D qemu.log -display gtk,zoom-to-fit=off $(RUN_FLAGS) -drive format=raw,media=disk,file=$(DISK)
-
+	GDK_BACKEND=x11 $(QEMU) -m 512M -serial file:serial.log -no-reboot -no-shutdown \
+		-d int,cpu_reset -D qemu.log $(RUN_FLAGS) -drive format=raw,media=disk,file=$(DISK)
+		
 debug: $(DISK) $(RUN_VARS)
 	GDK_BACKEND=x11 $(QEMU) -m 512M -serial file:qemu.log -no-reboot -no-shutdown -d int,cpu_reset -D qemu.log -s -S -display gtk,zoom-to-fit=off $(RUN_FLAGS) -drive format=raw,media=disk,file=$(DISK)
 endif
 
 # --- deps & clean ---
--include $(KOBJ:.o=.d) $(BOBJ:.o=.d) $(TOBJ:.o=.d)
+-include $(KOBJ:.o=.d) $(BOBJ:.o=.d) $(TBOBJ:.o=.d) $(TOBJ:.o=.d) $(CAR_OBJ:.o=.d)
 
 clean:
 	rm -rf $(BUILD)

@@ -2,7 +2,9 @@
 #include <stdbool.h>
 #include <string.h>
 #include <colors.h>
+#include <stdlib.h>
 #include "inc/comands.h"
+
 
 static char current[100] = "space/user";
 
@@ -89,6 +91,15 @@ static void command_parser(char* com) {
         if(argc > 1) { printf("t3rm: too many arguments"); return;}
         printf("\n");
         help();
+    } else if(strcmp(argv[0], "start") == 0) {
+        if(argc > 1) {
+            char buf[128] = "/dsk/";
+            strcat(buf, current);
+            strcat(buf, argv[1]);
+            process_start(buf);
+        } else {
+            printf("t3rm: err");
+        }
     }
     else {
         printf("\nt3rm: unknown command");

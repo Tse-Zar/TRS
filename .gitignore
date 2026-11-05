@@ -6,6 +6,4 @@ compile_commands.json
 *.o
 *build/
 *.log
-freestanding.txt 
-# file just for me. list of freestanding libs.
 data*

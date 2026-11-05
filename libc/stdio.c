@@ -20,3 +20,7 @@ void set_color(unsigned long long fg, unsigned long long bg) {
 void set_crsr(unsigned long long x, unsigned long long y) {
     syscall2(SYS_SET_CRSR, x ? (void*)x : 0, y ? (void*)y : 0);
 }
+
+void delay_ms(unsigned long long ms) {
+    syscall1(SYS_DELAY, (void*)ms);
+}

@@ -7,6 +7,9 @@ typedef struct {
 
 void printf(const char* str);
 unsigned int scanf(char* buf, unsigned long long len);
+char getchar_raw(void);
+
+void delay_ms(unsigned long long ms);
 
 /* --- cli command --- */
 void cli_clear(void);

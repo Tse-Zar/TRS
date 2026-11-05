@@ -44,13 +44,20 @@ static const char* statue[24] = {"    %%%", "   =====","  &%&%%%&", "  %& < <% "
     dsp_set_cursor(30, 0); \
     dsp_set_color(_Sapphire, _Crust);
 
+#define DBG_PORT 0x3F8
+static void dbg(char c) {
+    __asm__ volatile("outb %0, %1" :: "a"(c), "d"((unsigned short)DBG_PORT));
+}
 void kmain(boot_info_t* bi) {
+    dbg('K');
     memcpy(&_boot, bi, sizeof(boot_info_t));
     
     /* --- inits --- */
     gdt_init();
     pic_remap(IRQ_BASE);
     idt_init();
+    pmm_init(&_boot);
+    vmm_init();
 
     int i = 0;
     dsp_init(_boot.fb);
@@ -72,13 +79,12 @@ void kmain(boot_info_t* bi) {
     YES
 
     PRINT_STATUE
-    kb_init();
-    dsp_print("Keyboard intialized. ");
+    dsp_print("Memory initialized. ");
     YES
 
     PRINT_STATUE
-    pmm_init(&_boot);
-    dsp_print("Memory initialized. ");
+    kb_init();
+    dsp_print("Keyboard intialized. ");
     YES
 
     PRINT_STATUE
@@ -147,9 +153,12 @@ void kmain(boot_info_t* bi) {
 
     __asm__ volatile("sti");
 
+    dsp_set_color(_Red, _Crust);
+
     dsp_set_color(_Yantar, _Crust);
     dsp_print("START TERMINAL..\n");
     dsp_print("Press any key for work!");
+    
     stream_t* kb = kbd_get_stream();
     char c = 0;
     while(1) {

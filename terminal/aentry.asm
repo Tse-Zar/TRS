@@ -11,9 +11,15 @@
 
 [section .text.entry]
 _start:
+
+    mov dx, 0x3F8
+    mov al, 'P'
+    out dx, al
+
     xor ebp, ebp
     cld
     call main
-    ret
+    mov edi, eax
+    ;call proc_exit
 
 [section .note.GNU-stack noalloc noexec nowrite progbits]
