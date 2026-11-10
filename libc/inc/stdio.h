@@ -15,6 +15,7 @@ void delay_ms(unsigned long long ms);
 void cli_clear(void);
 void set_color(unsigned long long fg, unsigned long long bg);
 void set_crsr(unsigned long long x, unsigned long long y);
+void flip(void);
 
 /* --- file command --- */
 FILE fopen(const char* name);

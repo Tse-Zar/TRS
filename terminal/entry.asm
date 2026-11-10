@@ -18,6 +18,7 @@ _start:
 
     xor ebp, ebp
     cld
+    and rsp, -16
     call main
     mov edi, eax
     ;call proc_exit

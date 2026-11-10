@@ -5,8 +5,56 @@
 #include <stdlib.h>
 #include "inc/comands.h"
 
-
 static char current[100] = "space/user";
+
+static int build_app_path(char* out, unsigned int cap, const char* cwd, const char* name) {
+    if(!out || cap < 8 || !name || !*name) return -1;
+
+    unsigned int n = 0;
+    const char* prefix = "/dsk";
+    while(prefix[n] && n + 1 < cap) {
+        out[n] = prefix[n];
+        n++;
+    }
+
+    if(name[0] == '/') {
+        while(*name && n + 1 < cap) {
+            out[n++] = *name++;
+        }
+    } else {
+        if(n + 1 > cap) return -1;
+        out[n++] = '/';
+
+        if(cwd && *cwd) {
+            while(*cwd && n + 1 < cap) {
+                out[n++] = *cwd++;
+            }
+
+            if(out[n - 1] != '/') {
+                if(n + 1 >= cap) return -1;
+                out[n++] = '/';
+            }
+        }
+
+        while(*name && n + 1 < cap) {
+            out[n++] = *name++;
+        }
+    }
+
+    out[n] = '\0';
+
+    char* slash = strrchr(out, '/');
+    char* base  = slash ? slash + 1 : out;
+    if(!strrchr(base, '.')) {
+        const char* ext = ".pro";
+        while(*ext && n + 1 < cap) {
+            out[n++] = *ext++;
+        }
+        out[n] = '\0';     
+    }
+
+    return 0;
+}
 
 static void command_parser(char* com) {
     if(!com || *com == '\0') return;
@@ -92,13 +140,20 @@ static void command_parser(char* com) {
         printf("\n");
         help();
     } else if(strcmp(argv[0], "start") == 0) {
-        if(argc > 1) {
-            char buf[128] = "/dsk/";
-            strcat(buf, current);
-            strcat(buf, argv[1]);
-            process_start(buf);
-        } else {
-            printf("t3rm: err");
+        if(argc < 2) {
+            printf("\nt3rm: need\n\t- start {appname}");
+            return;
+        }
+
+        char path[160];
+        if(build_app_path(path, sizeof(path), current, argv[1]) != 0) {
+            printf("\nt3rm: path too long");
+            return;
+        }
+
+        int rc = process_start(path);
+        if(rc != 0) {
+            printf("\nt3rm: cannot start app. code: 0xs00n");
         }
     }
     else {

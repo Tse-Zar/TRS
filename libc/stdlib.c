@@ -10,6 +10,7 @@ uint32_t rand(pcg32_random_t* rng) {
     uint32_t rot = oldstate >> 59u;
     return (xorshifted >> rot)  | ( xorshifted << (( - rot ) & 31 ));
 }
-void process_start(const char *name) {
-    syscall1(SYS_START_PROC, (void*)name);
+
+int process_start(const char *name) {
+    return (int)syscall1(SYS_START_PROC, (void*)name);
 }

@@ -24,3 +24,7 @@ void set_crsr(unsigned long long x, unsigned long long y) {
 void delay_ms(unsigned long long ms) {
     syscall1(SYS_DELAY, (void*)ms);
 }
+
+void flip(void) {
+    syscall1(SYS_FRAME_FLIP, 0);
+}

@@ -19,6 +19,7 @@
 #define SYS_READDIR    8
 #define SYS_DELAY      9
 #define SYS_START_PROC 10
+#define SYS_FRAME_FLIP 11
 
 void syscall_init(void);
 void syscall_handler(_regs_t* reg);

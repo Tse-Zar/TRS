@@ -12,8 +12,8 @@
 
 #include <bootinfo.h>
 
-#define PAGE_SIZE 4096
-#define MAX_PAGES_FOR_APP 524288
+#define PAGE_SIZE 4096ULL
+#define MAX_PAGES_FOR_APP 4096
 
 /* --- phisical memory map --- */
 void pmm_init(boot_info_t* bi);

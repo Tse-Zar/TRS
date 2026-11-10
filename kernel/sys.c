@@ -118,7 +118,12 @@ void syscall_handler(_regs_t* reg) {
             break;
         }
         case SYS_START_PROC: {
-            start_proc((const char*)reg->rdx);
+            reg->rax = (unsigned long long)(long long)start_proc((const char*)reg->rdx);
+            break;
+        }
+        case SYS_FRAME_FLIP: {
+            dsp_flip();
+            reg->rax = 0;
             break;
         }
         default:

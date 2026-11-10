@@ -29,31 +29,31 @@ void* memcpy(void* dst, const void* src, size_t len) {
 
     int s_is_aligned = ((uintptr_t)s & 3) == 0;
 
-    uint32_t* d32 = (uint32_t*)d;
-    uint32_t* s32 = (uint32_t*)s;
+    uint64_t* d64 = (uint64_t*)d;
+    uint64_t* s64 = (uint64_t*)s;
 
-    while(len >= 32 && s_is_aligned) {
-        d32[0] = s32[0];
-        d32[1] = s32[1];
-        d32[2] = s32[2];
-        d32[3] = s32[3];
-        d32[4] = s32[4];
-        d32[5] = s32[5];
-        d32[6] = s32[6];
-        d32[7] = s32[7];
+    while(len >= 64 && s_is_aligned) {
+        d64[0] = s64[0];
+        d64[1] = s64[1];
+        d64[2] = s64[2];
+        d64[3] = s64[3];
+        d64[4] = s64[4];
+        d64[5] = s64[5];
+        d64[6] = s64[6];
+        d64[7] = s64[7];
 
-        d32 += 8;
-        s32 += 8;
-        len -= 32;
+        d64 += 8;
+        s64 += 8;
+        len -= 64;
     }
 
-    while(len >= 4 && s_is_aligned) {
-        *d32++ = *s32++;
-        len -= 4;
+    while(len >= 8 && s_is_aligned) {
+        *d64++ = *s64++;
+        len -= 8;
     }
 
-    d = (unsigned char*)d32;
-    s = (unsigned char*)s32;
+    d = (unsigned char*)d64;
+    s = (unsigned char*)s64;
 
     while(len > 0) {
         *d++ = *s++;

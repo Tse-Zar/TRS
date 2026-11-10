@@ -10,6 +10,7 @@
 _start:
     xor ebp, ebp
     cld
+    and rsp, -16
     call main
     ret
 

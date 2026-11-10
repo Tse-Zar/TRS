@@ -11,6 +11,6 @@
 
 
 /* --- process --- */
-void process_start(const char* name);
+int process_start(const char* name);
 
 #endif //STDLIB_H

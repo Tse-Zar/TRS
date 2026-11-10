@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <colors.h>
+#include <memory_paging.h>
 
 #define PSF2_MAGIC 0x72B54A86
 
@@ -20,18 +21,29 @@ static long dsp_y = 0, dsp_x = 0;
 static psf_header* font;
 static unsigned int bg = _Crust, fg = _PureWhite;
 static framebuf_info_t fb;
+static framebuf_info_t back;
+
+void dsp_flip(void) {
+    if(!back.base || !fb.base || back.base == fb.base) return;
+
+    unsigned long long bytes = fb.size;
+    if(!bytes) 
+        bytes = (unsigned long long)fb.pitch * fb.height;
+
+    memcpy((void*)fb.base,(void*)back.base, bytes);
+}
 
 static void check_scroll_or_new_line(void) {
-    if(dsp_x + font->width > fb.width) {
+    if(dsp_x + font->width > back.width) {
         dsp_y += font->height;
         dsp_x = 0;
     }
 
-    if(dsp_y + font->height > fb.height) {
-        unsigned int* dst = (unsigned int*)fb.base;
-        unsigned long long total_fb = fb.height * fb.pitch / 4;
-        unsigned int line = font->height * fb.pitch / 4;
-        memmove(dst, ((unsigned int*)fb.base + line), (total_fb - line) * sizeof(unsigned int));
+    if(dsp_y + font->height > back.height) {
+        unsigned int* dst = (unsigned int*)back.base;
+        unsigned long long total_fb = back.height * back.pitch / 4;
+        unsigned int line = font->height * back.pitch / 4;
+        memmove(dst, ((unsigned int*)back.base + line), (total_fb - line) * sizeof(unsigned int));
         
         for(unsigned int i = 1; i <= line; ++i) {
             dst[total_fb - i] = bg;
@@ -40,22 +52,35 @@ static void check_scroll_or_new_line(void) {
         dsp_x = 0;
     }
 }
+
 void dsp_clear(void) {
-    unsigned int* dst = (unsigned int*)fb.base;
-    unsigned int total = (fb.pitch / 4) * fb.height;
+    unsigned int* dst = (unsigned int*)back.base;
+    unsigned int total = (back.pitch / 4) * back.height;
     for(unsigned int i = 0; i < total; ++i) {
         dst[i] = bg;
     }
 
     dsp_x = 0;
     dsp_y = 0;
+
+    dsp_flip();
 }
 
 void dsp_init(framebuf_info_t framebuffer) {
     extern char _binary_ter_v32b_psf_start[];
     font = (psf_header*)_binary_ter_v32b_psf_start;
-    //if(font->magic != PSF2_MAGIC) return; 
+
     fb = framebuffer;
+    back = framebuffer;
+
+    unsigned long long bytes = fb.size;
+    if(!bytes) 
+        bytes = (unsigned long long)fb.pitch * fb.height;
+
+    back.base = (unsigned long long)alloc_pages(bytes / PAGE_SIZE);
+    if(!back.base) {
+        back = fb;
+    }
 
     dsp_clear();    
 }
@@ -80,10 +105,13 @@ void dsp_print_dec(int num) {
     } while(k > 0);
 
     while(i > 0) dsp_putchar(buffer[--i]);
+
+    dsp_flip();
+
 }
 
 void dsp_putchar(char c) {
-    unsigned int* dst = (unsigned int*)fb.base;
+    unsigned int* dst = (unsigned int*)back.base;
     bool is_b = false;
 
     check_scroll_or_new_line();
@@ -131,7 +159,7 @@ void dsp_putchar(char c) {
             unsigned int screen_x = dsp_x + j;
             unsigned int screen_y = dsp_y + i;
 
-            if(screen_x < fb.width && screen_y < fb.height) {
+            if(screen_x < back.width && screen_y < back.height) {
                 dst[screen_y * (fb.pitch / 4) + screen_x] = color;
             }
         }
@@ -144,6 +172,8 @@ void dsp_print(const char *str) {
         dsp_putchar(*str);
         str++;
     }
+
+    dsp_flip();
 }
 
 void dsp_set_color(unsigned int col_fg, unsigned int col_bg) {

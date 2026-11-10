@@ -11,6 +11,7 @@
 #define SYS_READDIR    8
 #define SYS_DELAY      9
 #define SYS_START_PROC 10
+#define SYS_FRAME_FLIP 11
 
 unsigned int syscall1(int call, void *one);
 unsigned int syscall2(int call, void* one, void* two);
