@@ -68,8 +68,8 @@ TCFLAGS  := -ffreestanding -m64 -mno-red-zone -mno-mmx -mno-sse -mno-sse2 \
             -fcf-protection=none \
             -O2 -g -Wall -Wextra -MMD -MP $(TINC)
 TLDFLAGS := -nostdlib -static -pie -z noexecstack -T terminal/linker.ld
-# --- caravan app flags ---
-CARLDFLAGS := -nostdlib -static -pie -z noexecstack -T base/caravan/linker.ld
+# --- univ app flags ---
+CARLDFLAGS := -nostdlib -static -pie -z noexecstack -T base/univ/linker.ld
 
 # ---------------- uefi loader flags ----------------
 BCFLAGS := -ffreestanding -m64 -mno-red-zone -DEFI_FUNCTION_WRAPPER \
@@ -117,19 +117,19 @@ TOBJ := $(patsubst %.c,$(BUILD)/%.o,$(TSRC)) \
         $(patsubst %.asm,$(BUILD)/%.o,$(TASM)) \
         $(TLIB)
 
-# --- caravan app ---
-CSRC    := $(wildcard base/caravan/*.c)
-CASM    := $(wildcard base/caravan/*.asm)
+# --- univ app ---
+CSRC    := $(wildcard base/univ/*.c)
+CASM    := $(wildcard base/univ/*.asm)
 CAR_OBJ := $(patsubst %.c,$(BUILD)/%.o,$(CSRC)) \
            $(patsubst %.asm,$(BUILD)/%.o,$(CASM)) \
            $(TLIB)
-CARAVAN := $(BUILD)/caravan.elf
-CAR_PRO := $(BUILD)/caravan.pro
+univ := $(BUILD)/univ.elf
+CAR_PRO := $(BUILD)/univ.pro
 
 DIRS := $(BUILD) $(BUILD)/boot
 
 # ---------------- targets ----------------
-.PHONY: all caravan boot disk run debug clean log kernel term
+.PHONY: all univ boot disk run debug clean log kernel term
 .SECONDARY: $(KOBJ) $(BOBJ) $(TOBJ) $(CAR_OBJ)
 all: disk
 
@@ -137,7 +137,7 @@ term:   $(TERM_PRO)
 kernel: $(KERNELBIN)
 boot:   $(BOOT_EFI)
 disk:   $(DISK)
-caravan: $(CAR_PRO)
+univ: $(CAR_PRO)
 
 # --- common object rules ---
 $(DIRS):
@@ -204,21 +204,21 @@ $(BOOT_EFI): $(BOOT_ELF)
            -O efi-app-x86_64 $< $@
 	@echo "[boot] $@"
 
-$(BUILD)/base/caravan/%.o: base/caravan/%.c | $(DIRS)
+$(BUILD)/base/univ/%.o: base/univ/%.c | $(DIRS)
 	@mkdir -p $(dir $@)
 	$(CC) $(TCFLAGS) -c $< -o $@
 
-$(BUILD)/base/caravan/%.o: base/caravan/%.asm | $(DIRS)
+$(BUILD)/base/univ/%.o: base/univ/%.asm | $(DIRS)
 	@mkdir -p $(dir $@)
 	$(NASM) -f elf64 $< -o $@
 
-$(CARAVAN): $(CAR_OBJ) base/caravan/linker.ld | $(DIRS)
+$(univ): $(CAR_OBJ) base/univ/linker.ld | $(DIRS)
 	$(LD) $(CARLDFLAGS) $(CAR_OBJ) -o $@
-	@echo "[caravan] linked: $@"
+	@echo "[univ] linked: $@"
 
-$(CAR_PRO): $(CARAVAN)
+$(CAR_PRO): $(univ)
 	$(OBJCOPY) -O binary --remove-section=.bss $< $@
-	@echo "[caravan] packed: $@ ($$(stat -c%s $@) bytes)"
+	@echo "[univ] packed: $@ ($$(stat -c%s $@) bytes)"
 
 # --- GPT disk with FAT32 ESP ---
 # on-disk tree (matches README):
@@ -242,7 +242,7 @@ $(DISK): $(BOOT_EFI) $(KERNELBIN) $(TERM_PRO) $(CAR_PRO)
 	$(MCOPY) -i $(ESP_IMG) $(BOOT_EFI) ::/EFI/BOOT/BOOTX64.EFI
 	$(MCOPY) -i $(ESP_IMG) $(KERNELBIN) ::/space/sys/kern/kernel.bin
 	$(MCOPY) -i $(ESP_IMG) $(TERM_PRO) ::/space/sys/term.pro
-	$(MCOPY) -i $(ESP_IMG) $(CAR_PRO) ::/space/user/caravan.pro
+	$(MCOPY) -i $(ESP_IMG) $(CAR_PRO) ::/space/user/univ.pro
 	$(DD) if=$(ESP_IMG) of=$(DISK) bs=$(ESP_OFF) seek=1 conv=notrunc status=none
 	@echo "[disk] done: $@"
 

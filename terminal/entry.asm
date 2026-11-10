@@ -18,9 +18,10 @@ _start:
 
     xor ebp, ebp
     cld
-    and rsp, -16
+
+    push qword [rsp]
     call main
     mov edi, eax
-    ;call proc_exit
+    ret
 
 [section .note.GNU-stack noalloc noexec nowrite progbits]

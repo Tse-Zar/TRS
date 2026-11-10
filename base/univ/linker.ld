@@ -13,6 +13,7 @@ SECTIONS
     . = 0x0;
     __app_start = .;
 
+    
     .text : {
         *(.text.entry)
         *(.text)
@@ -31,6 +32,10 @@ SECTIONS
         *(.data.*)
         *(.data.rel.ro*)
     } :data
+
+    . = ALIGN(8);
+    .got : { *(.got) *(.got.plt) } :data
+    .rela.dyn : { *(.rela.dyn) *(.rela.*) }
 
     __app_file_end = .;
 

@@ -150,11 +150,18 @@ static void command_parser(char* com) {
             printf("\nt3rm: path too long");
             return;
         }
+        if(strcmp(path, "/dsk/space/sys/kern/kernel.bin") == 0) {
+            printf("\nt3rm: please don`t do it");
+            return;
+        }
 
         int rc = process_start(path);
+
         if(rc != 0) {
             printf("\nt3rm: cannot start app. code: 0xs00n");
         }
+
+        set_color(_Yantar, _TermBG);
     }
     else {
         printf("\nt3rm: unknown command");

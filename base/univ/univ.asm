@@ -1,5 +1,5 @@
 ; ===========================================
-; = CARAVAN Entry Point ---------------------
+; = UNIV Entry Point ---------------------
 ; ===========================================
 
 [BITS 64]
@@ -8,9 +8,14 @@
 
 [section .text.entry]
 _start:
+    mov dx, 0x3F8
+    mov al, 'U'
+    out dx, al
+
     xor ebp, ebp
     cld
-    and rsp, -16
+
+    push qword [rsp]
     call main
     ret
 

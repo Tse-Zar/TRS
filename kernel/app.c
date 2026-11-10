@@ -6,7 +6,7 @@
 #include <stream.h>
 #include <keyboard.h>
 
-#define APP_STACK_SIZE (16 * 1024)
+#define APP_STACK_SIZE (64 * 1024)
 #define APP_BSS_SLACK  4
 
 extern void callapp(void* entry, void* slack_top);

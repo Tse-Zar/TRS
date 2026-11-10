@@ -5,12 +5,25 @@
 callapp:
     ; rdi = entry, rsi = stack_top : app.c::start_process
     push rbx
-    mov rbx, rsp
-    xor ebp, ebp
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    
+    mov r15, rsp
     mov rsp, rsi
-    and rsi, -16
+    and rsp, -16
+    xor ebp, ebp
     call rdi
-    mov rsp, rbx
+
+    mov rsp, r15
+    
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
     pop rbx
     ret
 
