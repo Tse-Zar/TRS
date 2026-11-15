@@ -48,27 +48,43 @@ OVMF_VARS_SRC := $(firstword $(wildcard \
                 /usr/share/ovmf/OVMF_VARS.fd \
                 $(subst OVMF_CODE,OVMF_VARS,$(OVMF_CODE))))
 
+# ---------------- hardening ----------------
+# guard в __stack_chk_guard, а не в %fs: у ядра нет TLS
+HARDEN_CORE := -fstack-protector-strong -mstack-protector-guard=global \
+               -fstack-clash-protection -fno-common
+HARDEN_USER := $(HARDEN_CORE)
+
+WARN := -Wall -Wextra -Wformat=2
+ifeq ($(STRICT),1)
+WARN += -Wshadow -Wvla -Wundef -Wpointer-arith -Wcast-align -Wstrict-prototypes
+endif
+
 # ---------------- kernel flags ----------------
 KINC    := -Ikernel/inc -Ilibc/inc -Ibootloader/uefi/inc -Itrfs/fat32
-KCFLAGS := -ffreestanding -m64 -mno-red-zone -mno-mmx -mno-sse -mno-sse2 \
+KCFLAGS := -std=c11 -ffreestanding -m64 -mno-red-zone -mno-mmx -mno-sse -mno-sse2 \
            -fno-builtin -fno-builtin-memcpy -fno-builtin-memset \
-           -mcmodel=kernel -fno-pie -fno-stack-protector \
+           -mcmodel=kernel -fno-pie \
            -fno-asynchronous-unwind-tables -fno-omit-frame-pointer \
-           -fcf-protection=none \
-           -O2 -g -Wall -Wextra -MMD -MP $(KINC)
+           -fcf-protection=none $(HARDEN_CORE) \
+           -O2 -g $(WARN) -MMD -MP $(KINC)
+
+# security.c предоставляет сам __stack_chk_fail — его нельзя инструментировать
+KCFLAGS_NOSSP := $(filter-out -fstack-protector-strong,$(KCFLAGS)) \
+                 -fno-stack-protector -fno-stack-clash-protection
 
 KLDFLAGS := -nostdlib -z max-page-size=0x1000 -z noexecstack -T kernel/linker.ld
 
 # ---------------- terminal (app) flags ----------------
-# kernel/inc is here for app.h (.pro header layout); libc/inc for the freestanding libc
 TINC     := -Iterminal/inc -Ilibc/inc -Ibootloader/uefi/inc -Itrfs/fat32
-TCFLAGS  := -ffreestanding -m64 -mno-red-zone -mno-mmx -mno-sse -mno-sse2 \
-            -mcmodel=small -fPIE -fno-stack-protector \
+TCFLAGS  := -std=c11 -ffreestanding -m64 -mno-red-zone -mno-mmx -mno-sse -mno-sse2 \
+            -mcmodel=small -fPIE \
             -fno-asynchronous-unwind-tables -fno-omit-frame-pointer \
-            -fcf-protection=none \
-            -O2 -g -Wall -Wextra -MMD -MP $(TINC)
+            -fcf-protection=none $(HARDEN_USER) \
+            -O2 -g $(WARN) -MMD -MP $(TINC)
+ifeq ($(FORTIFY),1)
+TCFLAGS += -D_FORTIFY_SOURCE=2
+endif
 TLDFLAGS := -nostdlib -static -pie -z noexecstack -T terminal/linker.ld
-# --- univ app flags ---
 CARLDFLAGS := -nostdlib -static -pie -z noexecstack -T base/univ/linker.ld
 
 # ---------------- uefi loader flags ----------------
@@ -97,8 +113,8 @@ FONT_OBJ  := $(BUILD)/terminus.o
 TERM      := $(BUILD)/term.elf
 TERM_PRO  := $(BUILD)/term.pro
 
-LIBC_KSRC := $(filter-out libc/stdio.c libc/syscall.c libc/dirent.c libc/stdlib.c,$(wildcard libc/*.c))
-
+LIBC_KSRC := $(filter-out libc/stdio.c libc/syscall.c libc/dirent.c libc/stdlib.c \
+                         libc/security.c,$(wildcard libc/*.c))
 KSRC := $(wildcard kernel/*.c kernel/driver/*.c kernel/cpu/*.c trfs/fat32/*.c) $(LIBC_KSRC)
 KASM := $(wildcard kernel/*.asm kernel/cpu/*.asm)
 
@@ -110,7 +126,8 @@ TBOBJ := $(BUILD)/boot/tramp.o
 
 TSRC := $(wildcard terminal/*.c)
 TASM := $(wildcard terminal/*.asm)
-TLIB_SRC := libc/string.c libc/stdio.c libc/syscall.c libc/dirent.c libc/stdlib.c
+TLIB_SRC := libc/string.c libc/stdio.c libc/syscall.c libc/dirent.c libc/stdlib.c \
+            libc/security.c
 TLIB     := $(patsubst libc/%.c,$(BUILD)/app_libc/%.o,$(TLIB_SRC))
 
 TOBJ := $(patsubst %.c,$(BUILD)/%.o,$(TSRC)) \
@@ -146,6 +163,10 @@ $(DIRS):
 $(BUILD)/%.o: %.c | $(DIRS)
 	@mkdir -p $(dir $@)
 	$(CC) $(KCFLAGS) -c $< -o $@
+
+$(BUILD)/kernel/security.o: kernel/security.c | $(DIRS)
+	@mkdir -p $(dir $@)
+	$(CC) $(KCFLAGS_NOSSP) -c $< -o $@
 	
 $(BUILD)/%.o: %.asm | $(DIRS)
 	@mkdir -p $(dir $@)
@@ -258,8 +279,10 @@ $(RUN_VARS): $(OVMF_VARS_SRC) | $(DIRS)
 RUN_FLAGS := -drive if=pflash,format=raw,readonly=on,file=$(OVMF_CODE) \
              -drive if=pflash,format=raw,file=$(RUN_VARS)
 
+QEMU_CPU ?= max
+
 run: $(DISK) $(RUN_VARS)
-	$(QEMU) -m 2G -vga std -global VGA.xres=1280 -global VGA.yres=720 -display gtk,zoom-to-fit=on $(RUN_FLAGS) -drive format=raw,media=disk,file=$(DISK)
+	$(QEMU) -cpu $(QEMU_CPU) -m 2G -vga std -global VGA.xres=1280 -global VGA.yres=720 -display gtk,zoom-to-fit=on $(RUN_FLAGS) -drive format=raw,media=disk,file=$(DISK)
 
 log: $(DISK) $(RUN_VARS)
 	GDK_BACKEND=x11 $(QEMU) -m 512M -serial file:serial.log -no-reboot -no-shutdown \
@@ -268,6 +291,40 @@ log: $(DISK) $(RUN_VARS)
 debug: $(DISK) $(RUN_VARS)
 	GDK_BACKEND=x11 $(QEMU) -m 512M -serial file:qemu.log -no-reboot -no-shutdown -d int,cpu_reset -D qemu.log -s -S -display gtk,zoom-to-fit=off $(RUN_FLAGS) -drive format=raw,media=disk,file=$(DISK)
 endif
+
+# ---------------- static analysis ----------------
+ANALYZE_DIR := $(BUILD)/analyze
+
+.PHONY: analyze analyze-clang analyze-tidy analyze-cppcheck
+
+analyze: analyze-clang analyze-tidy analyze-cppcheck
+
+analyze-clang:
+	@command -v scan-build >/dev/null 2>&1 || { \
+	    echo "[analyze] scan-build not found: install clang-tools"; exit 1; }
+	@mkdir -p $(ANALYZE_DIR)
+	scan-build --status-bugs -o $(ANALYZE_DIR) make -B kernel
+
+analyze-tidy: compile_commands.json
+	@command -v clang-tidy >/dev/null 2>&1 || { \
+	    echo "[analyze] clang-tidy not found"; exit 1; }
+	clang-tidy -p . $(KSRC) --quiet
+
+compile_commands.json:
+	@if command -v bear >/dev/null 2>&1; then \
+	    bear -- make -B kernel; \
+	elif command -v compiledb >/dev/null 2>&1; then \
+	    compiledb make -B kernel; \
+	else \
+	    echo "[analyze] need 'bear' or 'compiledb'"; exit 1; \
+	fi
+
+analyze-cppcheck:
+	@command -v cppcheck >/dev/null 2>&1 || { \
+	    echo "[analyze] cppcheck not found"; exit 1; }
+	cppcheck --std=c11 --enable=warning,performance,portability \
+	    --inline-suppr --suppress=missingIncludeSystem \
+	    -Ikernel/inc -Ilibc/inc -Itrfs/fat32 kernel libc trfs
 
 # --- deps & clean ---
 -include $(KOBJ:.o=.d) $(BOBJ:.o=.d) $(TBOBJ:.o=.d) $(TOBJ:.o=.d) $(CAR_OBJ:.o=.d)

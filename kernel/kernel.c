@@ -24,7 +24,7 @@
 #include <panic.h>
 #include <sys.h>
 #include <app.h>
-//#include <process.h>
+#include <security.h>
 
 boot_info_t _boot;
 
@@ -48,7 +48,9 @@ static const char* statue[24] = {"    %%%", "   =====","  &%&%%%&", "  %& < <% "
 static void dbg(char c) {
     __asm__ volatile("outb %0, %1" :: "a"(c), "d"((unsigned short)DBG_PORT));
 }
+
 void kmain(boot_info_t* bi) {
+    //stack_guard_init();
     dbg('K');
     memcpy(&_boot, bi, sizeof(boot_info_t));
     
@@ -158,6 +160,7 @@ void kmain(boot_info_t* bi) {
     dsp_set_color(_Yantar, _Crust);
     dsp_print("START TERMINAL..\n");
     dsp_print("Press any key for work!");
+
     
     stream_t* kb = kbd_get_stream();
     char c = 0;

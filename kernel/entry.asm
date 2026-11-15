@@ -8,6 +8,7 @@
 [BITS 64]
 [GLOBAL _start]
 [EXTERN kmain]
+[EXTERN stack_guard_init]
 [extern __bss_start]
 [extern __bss_end]
 [extern __kernel_start]
@@ -16,6 +17,7 @@
 [extern __hdr_mem_pages]
 [extern __hdr_text_pages]
 [extern __hdr_entry_off]
+
 [section .head]
 kern_hdr:
     dd 0x5452534B
@@ -34,7 +36,7 @@ _start:
     out dx, al
     
     xor ebp, ebp
-    mov rdx, rdi
+    mov rbx, rdi
 
     cld
     lea rdi, [rel __bss_start]
@@ -42,8 +44,9 @@ _start:
     sub rcx, rdi
     xor eax, eax
     rep stosb
-
-    mov rdi, rdx
+    
+    call stack_guard_init
+    mov rdi, rbx
     call kmain
 hang:
     cli

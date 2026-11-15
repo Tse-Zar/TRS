@@ -9,6 +9,5 @@ int main() {
     cli_clear();
     printf("Univ will be soon.");
 
-    //while(1) __asm__ volatile("hlt");
     return 0;
 }

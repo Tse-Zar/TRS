@@ -14,7 +14,7 @@
 #include <panic.h>
 
 #define IDT_ENTRIES     256
-#define IDT_FLAGS_RINGO 0x8E
+#define IDT_FLAGS_RING0 0x8E
 
 typedef struct {
     unsigned short offset_low;
@@ -39,6 +39,8 @@ static isr_handler_t irq_handlers[16];
 
 extern void* isr_stub_table[256];
 
+static unsigned long long timers_int = 0ULL;
+
 static const char* const exc_names[32] = {
     "Division by zero", "Debug", "NMI", "Breakpoint",
     "Overflow", "Bound range exceeded", "Invalid opcode", "No FPU",
@@ -58,7 +60,7 @@ static void idt_set_gate(unsigned char num, void* handler, unsigned char ist) {
     idt[num].offset_high = (unsigned int)((addr >> 32) & 0xFFFFFFFF);
     idt[num].selector    = GDT_KERNEL_CODE;
     idt[num].zero        = ist & 0x0F;
-    idt[num].flags       = IDT_FLAGS_RINGO ;
+    idt[num].flags       = IDT_FLAGS_RING0;
     idt[num].reserved    = 0;
 }
 
@@ -103,6 +105,11 @@ void isr_dispatcher(_regs_t *reg) {
     outb(PIC1_CMD, PIC_EOI);
 }
 
+static void timer_handler(_regs_t* reg) {
+    (void)reg;
+    timers_int++;
+}
+
 void idt_init(void) {
     memset(idt, 0, sizeof(idt));
     memset((void*)isr_handlers, 0, sizeof(isr_handlers));
@@ -114,6 +121,8 @@ void idt_init(void) {
     for(unsigned i = 0; i < 256; ++i) {
         idt_set_gate((unsigned char)i, isr_stub_table[i], (i == 8) ? 1 : 0);
     }
+
+    irq_install(0, timer_handler);
 
     __asm__ volatile("lidt %0" :: "m"(idt_ptr));
 }
