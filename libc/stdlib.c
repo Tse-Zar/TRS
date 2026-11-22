@@ -1,7 +1,9 @@
 #include <stdlib.h>
 #include <syscall.h>
 #include <stdint.h>
-static unsigned int next = 623432423;
+#include <types.h>
+
+static uint next = 623432423;
 
 uint32_t rand(pcg32_random_t* rng) {
     uint64_t oldstate = rng->state;

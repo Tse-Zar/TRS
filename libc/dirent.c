@@ -27,7 +27,7 @@ int readdir(DIR *dir, DirInfo *info) {
         *info = inf;
         return 0;
     }
-} 
+}
 
 int closedir(DIR *dir) {
     if(!dir) return -1;

@@ -11,10 +11,6 @@ tramp:
     mov r13, rcx
     mov r14, r8
 
-    mov dx, 0x3F8
-    mov al, 'T'
-    out dx, al
-
     mov cr3, r10
 
     mov rsp, r14

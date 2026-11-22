@@ -8,18 +8,18 @@
 
 #include <mem.h>
 
-void* malloc(unsigned long size) {
+void* malloc(ulong size) {
     (void)size;
     return (void*)0;
 }
 
-void* calloc(unsigned long num, unsigned long size) {
+void* calloc(ulong num, ulong size) {
     (void)num;
     (void)size;
     return (void*)0;
 }
 
-void* realloc(void* ptr, unsigned long new_size) {
+void* realloc(void* ptr, ulong new_size) {
     (void)ptr;
     (void)new_size;
     return (void*)0;

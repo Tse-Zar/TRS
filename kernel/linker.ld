@@ -13,17 +13,14 @@ SECTIONS
 {
     . = KERNEL_VBASE;
     __kernel_start = .;
-    
-    /* Объединяем заголовок и точку входа в ОДНУ секцию линкера */
+
     .text : {
         __text_start = .;
         *(.head)
-        
-        /* Принудительно выравниваем внутри секции на 64 байта, 
-           чтобы убрать скрытые оптимизации линкера */
-        . = ALIGN(64); 
+
+        . = ALIGN(64);
         *(.text.entry)
-        
+
         *(.text)
         *(.text.*)
     } :text
@@ -33,9 +30,7 @@ SECTIONS
         *(.rodata)
         *(.rodata.*)
     } :text
-    
-    /* Метка конца кода ДОЛЖНА быть строго ПОСЛЕ выравнивания на 4К, 
-       чтобы размер в страницах включал в себя весь физический зазор */
+
     . = ALIGN(4K);
     __text_end = .;
 
@@ -44,7 +39,7 @@ SECTIONS
         *(.data.*)
         *(.data.rel.ro*)
     } :data
-    
+
     . = ALIGN(4K);
     __data_end = .;
 
@@ -53,13 +48,12 @@ SECTIONS
         *(.bss)
         *(.bss.*)
         *(COMMON)
-        . = ALIGN(4K); /* Выравниваем конец BSS */
+        . = ALIGN(4K);
         __bss_end = .;
     } :data
 
     __kernel_end = .;
 
-    /* Исправляем подсчет размеров */
     __hdr_image_size = __data_end - __kernel_start;
     __hdr_mem_pages  = (__kernel_end - __kernel_start) >> 12;
     __hdr_text_pages = (__text_end - __kernel_start) >> 12;

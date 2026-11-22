@@ -12,23 +12,25 @@
 #include <io.h>
 #include <gdt.h>
 #include <panic.h>
+#include <thread.h>
+#include <sys.h>
 
 #define IDT_ENTRIES     256
 #define IDT_FLAGS_RING0 0x8E
 
 typedef struct {
-    unsigned short offset_low;
-    unsigned short selector;
-    unsigned char  zero;
-    unsigned char  flags;
-    unsigned short offset_mid;
-    unsigned int   offset_high;
-    unsigned int   reserved;
+    ushort offset_low;
+    ushort selector;
+    uchar  zero;
+    uchar  flags;
+    ushort offset_mid;
+    uint   offset_high;
+    uint   reserved;
 } __attribute__((packed)) idt_entry_t;
 
 typedef struct {
-    unsigned short limit;
-    unsigned long  base;
+    ushort limit;
+    ulong  base;
 } __attribute__((packed)) idt_ptr_t;
 
 static idt_entry_t idt[IDT_ENTRIES];
@@ -38,8 +40,6 @@ static isr_handler_t isr_handlers[256];
 static isr_handler_t irq_handlers[16];
 
 extern void* isr_stub_table[256];
-
-static unsigned long long timers_int = 0ULL;
 
 static const char* const exc_names[32] = {
     "Division by zero", "Debug", "NMI", "Breakpoint",
@@ -52,62 +52,60 @@ static const char* const exc_names[32] = {
     "Reserved", "Reserved", "Reserved", "Reserved"
 };
 
-static void idt_set_gate(unsigned char num, void* handler, unsigned char ist) {
-    unsigned long addr = (unsigned long)handler;
+static void idt_set_gate(uchar num, void* handler, uchar ist) {
+    ulong addr = (ulong)handler;
 
-    idt[num].offset_low  = (unsigned short)(addr & 0xFFFF);
-    idt[num].offset_mid  = (unsigned short)((addr >> 16) & 0xFFFF);
-    idt[num].offset_high = (unsigned int)((addr >> 32) & 0xFFFFFFFF);
+    idt[num].offset_low  = (ushort)(addr & 0xFFFF);
+    idt[num].offset_mid  = (ushort)((addr >> 16) & 0xFFFF);
+    idt[num].offset_high = (uint)((addr >> 32) & 0xFFFFFFFF);
     idt[num].selector    = GDT_KERNEL_CODE;
     idt[num].zero        = ist & 0x0F;
     idt[num].flags       = IDT_FLAGS_RING0;
     idt[num].reserved    = 0;
 }
 
-void isr_install(unsigned char vector, isr_handler_t handler) {
+void isr_install(uchar vector, isr_handler_t handler) {
     isr_handlers[vector] = handler;
 }
 
-void irq_install(unsigned char irq, isr_handler_t handler) {
+void irq_install(uchar irq, isr_handler_t handler) {
     if(irq < 16) irq_handlers[irq] = handler;
 }
 
-static int irq_is_spurious(unsigned irq) {
-    unsigned short cmd = (irq < 8) ? PIC1_CMD : PIC2_CMD;
+static int irq_is_spurious(uint irq) {
+    ushort cmd = (irq < 8) ? PIC1_CMD : PIC2_CMD;
     outb(cmd, 0x0B);
     return !(inb(cmd) & (1 << (irq & 7)));
 }
 
-void isr_dispatcher(_regs_t *reg) {
+_regs_t* isr_dispatcher(_regs_t *reg) {
+    _Static_assert(sizeof(_regs_t) == 192, "regs must match isr_common layout");
+
     if(isr_handlers[reg->int_no]) isr_handlers[reg->int_no](reg);
 
     if(reg->int_no < 32) {
+        if((reg->cs & 3) == 3) {
+            //thread_exit(-(int)reg->int_no);
+            return reg; //sched_on_irq(reg);
+        }
 
         kpanic_regs(reg, exc_names[reg->int_no]);
-        return;
     }
 
-    if(reg->int_no < IRQ_BASE || reg->int_no >= IRQ_BASE + 16) {
-        return;
-    }
-
-    unsigned irq = reg->int_no - IRQ_BASE;
-    if(irq == 7 || irq == 15) {
-        if(irq_is_spurious(irq)) {
-            if(irq == 15) outb(PIC1_CMD, PIC_EOI);
-            return;
+    if(reg->int_no >= IRQ_BASE && reg->int_no < IRQ_BASE + 16) {
+        uint irq = reg->int_no - IRQ_BASE;
+        if((irq == 7 || irq == 15) && irq_is_spurious(irq)) {
+                if(irq == 15) outb(PIC1_CMD, PIC_EOI);
+                return reg; // sched_on_irq(reg);
         }
+
+        if(irq_handlers[irq]) irq_handlers[irq](reg);
+
+        if(irq >= 8) outb(PIC2_CMD, PIC_EOI);
+        outb(PIC1_CMD, PIC_EOI);
     }
 
-    if(irq_handlers[irq]) irq_handlers[irq](reg);
-
-    if(irq >= 8) outb(PIC2_CMD, PIC_EOI);
-    outb(PIC1_CMD, PIC_EOI);
-}
-
-static void timer_handler(_regs_t* reg) {
-    (void)reg;
-    timers_int++;
+    return reg; //sched_on_irq(reg);
 }
 
 void idt_init(void) {
@@ -116,13 +114,13 @@ void idt_init(void) {
     memset((void*)irq_handlers, 0, sizeof(irq_handlers));
 
     idt_ptr.limit = sizeof(idt) - 1;
-    idt_ptr.base  = (unsigned long)idt;
+    idt_ptr.base  = (ulong)idt;
 
-    for(unsigned i = 0; i < 256; ++i) {
-        idt_set_gate((unsigned char)i, isr_stub_table[i], (i == 8) ? 1 : 0);
+    for(uint i = 0; i < 256; ++i) {
+        idt_set_gate((uchar)i, isr_stub_table[i], (i == 8) ? 1 : 0);
     }
 
-    irq_install(0, timer_handler);
+    idt[SYSCALL_VECTOR].flags = 0xEE;
 
     __asm__ volatile("lidt %0" :: "m"(idt_ptr));
 }

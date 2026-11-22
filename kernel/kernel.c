@@ -25,12 +25,15 @@
 #include <sys.h>
 #include <app.h>
 #include <security.h>
+#include <timer.h>
+#include <thread.h>
+#include <types.h>
 
 boot_info_t _boot;
 
 #define YES \
     dsp_set_color(_Peach, _Crust); \
-    dsp_print("[+]\n"); \
+    dsp_print("[+]\n");
 
 static const char* statue[24] = {"    %%%", "   =====","  &%&%%%&", "  %& < <% ",
 "   &\\__/","    \\ |____","   .', ,  ()","  / -.  _)| "," |_(_.    |",
@@ -39,27 +42,32 @@ static const char* statue[24] = {"    %%%", "   =====","  &%&%%%&", "  %& < <% "
 "   |(     | ","   |  \\ \\ |","    \\  )\\ |","   __)/ / \\","--\"--(_.Ooo'----" };
 
 #define PRINT_STATUE \
-    dsp_set_color(_Red, _Crust); \
-    dsp_print(statue[i++]); \
-    dsp_set_cursor(30, 0); \
-    dsp_set_color(_Sapphire, _Crust);
+    if(i < 24) { \
+        dsp_set_color(_Red, _Crust); \
+        dsp_print(statue[i++]); \
+        dsp_set_cursor(30, 0); \
+        dsp_set_color(_Sapphire, _Crust); \
+    }
 
-#define DBG_PORT 0x3F8
+#define DBG_PORT 0x3F8U
 static void dbg(char c) {
-    __asm__ volatile("outb %0, %1" :: "a"(c), "d"((unsigned short)DBG_PORT));
+    __asm__ volatile("outb %0, %1" :: "a"(c), "d"((ushort)DBG_PORT));
+}
+
+static void kernel_idle(void) {
+    while(1) __asm__ volatile("sti; hlt");
 }
 
 void kmain(boot_info_t* bi) {
-    //stack_guard_init();
     dbg('K');
     memcpy(&_boot, bi, sizeof(boot_info_t));
-    
+
     /* --- inits --- */
     gdt_init();
     pic_remap(IRQ_BASE);
     idt_init();
+    timer_init(TIMER_HZ);
     pmm_init(&_boot);
-    vmm_init();
 
     int i = 0;
     dsp_init(_boot.fb);
@@ -75,9 +83,13 @@ void kmain(boot_info_t* bi) {
     PRINT_STATUE
     dsp_print("IDT initialized. ");
     YES
-    
+
     PRINT_STATUE
-    dsp_print("PIC remaped. ");
+    dsp_print("TIMER initialized. ");
+    YES
+
+    PRINT_STATUE
+    dsp_print("PIC remapped. ");
     YES
 
     PRINT_STATUE
@@ -86,7 +98,7 @@ void kmain(boot_info_t* bi) {
 
     PRINT_STATUE
     kb_init();
-    dsp_print("Keyboard intialized. ");
+    dsp_print("Keyboard initialized. ");
     YES
 
     PRINT_STATUE
@@ -121,7 +133,7 @@ void kmain(boot_info_t* bi) {
             PRINT_STATUE
             dsp_set_color(_Lavender, _Crust);
             dsp_print("kernel.bin size: ");
-            dsp_print_dec((int)info.size);
+            dsp_print_dec(info.size);
             dsp_print("\n");
             PRINT_STATUE
         } else {
@@ -161,20 +173,18 @@ void kmain(boot_info_t* bi) {
     dsp_print("START TERMINAL..\n");
     dsp_print("Press any key for work!");
 
-    
     stream_t* kb = kbd_get_stream();
     char c = 0;
     while(1) {
         if(stream_try_read(kb, &c, 1)) break;
-        __asm__ volatile("pause"); 
+        __asm__ volatile("hlt");
     }
 
     dsp_set_color(_Yantar, _TermBG);
     dsp_clear();
 
-    start_proc("/dsk/space/sys/term.pro");
+    //thread_create((ullong)kernel_idle, 0, 0, 0);
 
-    while(1) {
-        __asm__ volatile ("sti; hlt");
-    }
+    start_proc("/dsk/space/sys/term.pro");
+   // sched_start();
 }

@@ -118,18 +118,18 @@ static pt_t* sub_table(unsigned long long* e) {
 
     unsigned long long p = alloc_pages(LOW_TOP, 1, EfiLoaderData);
     *e = p | PTE_P | PTE_WR;
-   
+
     return (pt_t*)(UINTN)p;
 }
 
-static void map_4k(unsigned long long vaddr, unsigned long long paddr, unsigned long long bytes, 
+static void map_4k(unsigned long long vaddr, unsigned long long paddr, unsigned long long bytes,
                    unsigned long long flags) {
     for(unsigned long long i = 0; i < bytes; i += PG) {
         unsigned long long v = vaddr + i;
         pt_t* pdpt = sub_table(&_pml4->e[(v >> 39) & 511]);
         pt_t* pd   = sub_table(&pdpt->e[(v >> 30) & 511]);
         pt_t* pt   = sub_table(&pd->e[(v >> 21) & 511]);
-        
+
         pt->e[(v >> 12) & 511] = ((paddr + i) & PTE_ADDR) | flags | PTE_P;
     }
 }
@@ -160,7 +160,7 @@ static int id_class(UINT32 type, unsigned long long* flags) {
         case EfiACPIReclaimMemory:
             *flags = MM_UNUSED;
             return 1;
-        
+
         case EfiRuntimeServicesData:
             *flags = MM_DATA;
             return 1;
@@ -196,11 +196,11 @@ static int is_ram(UINT32 type) {
 }
 
 static int is_free(UINT32 type) {
-    return type == EfiConventionalMemory || type == EfiLoaderCode       || type == EfiLoaderData || 
+    return type == EfiConventionalMemory || type == EfiLoaderCode       || type == EfiLoaderData ||
            type == EfiBootServicesCode   || type == EfiBootServicesData || type == EfiACPIReclaimMemory;
 }
 
-static EFI_STATUS read_map(void* buf, unsigned long long cap, UINTN* size, UINTN* key, 
+static EFI_STATUS read_map(void* buf, unsigned long long cap, UINTN* size, UINTN* key,
                            UINTN* dsize) {
     UINTN sz = (UINTN)cap;
     UINTN k = 0;
@@ -227,7 +227,7 @@ static EFI_MEMORY_DESCRIPTOR* probe_map(unsigned long long* size, unsigned long 
     EFI_MEMORY_DESCRIPTOR* desc = (EFI_MEMORY_DESCRIPTOR*)(UINTN)
                                alloc_pages(LOW_TOP, pages_of(sz), EfiLoaderData);
 
-    if(read_map(desc, sz, &sz, &key, &d) != EFI_SUCCESS) 
+    if(read_map(desc, sz, &sz, &key, &d) != EFI_SUCCESS)
         fatal("Get MemoryMap.");
 
     *size  = sz;
@@ -250,7 +250,7 @@ static void build_identity(EFI_MEMORY_DESCRIPTOR* desc, unsigned long long size,
 }
 
 static void bm_set(unsigned long long p) {
-    if (p < _total_pages) _bmap[p >> 3] |= (1U << (p & 7)); 
+    if (p < _total_pages) _bmap[p >> 3] |= (1U << (p & 7));
 }
 static void bm_clr(unsigned long long p) {
     if(p < _total_pages) _bmap[p >> 3] &= ~(1U << (p & 7));
@@ -304,7 +304,7 @@ static void load_kernel(EFI_FILE* root) {
     uefi_call_wrapper(file->SetPosition, 2, file, 0);
 
     _kern_size  = size;
-    _kern_pages = pages_of(size) + KERN_BSS_SLACK; 
+    _kern_pages = pages_of(size) + KERN_BSS_SLACK;
     _kern_phys = alloc_pages(LOW_TOP, _kern_pages, EfiLoaderCode);
     for(UINTN off = 0; off < size;) {
         UINTN n = size - off;
@@ -398,7 +398,7 @@ static void init_framebuf(void) {
     unsigned int gm;
     unsigned int bm;
     switch (mi->PixelFormat) {
-        case PixelRedGreenBlueReserved8BitPerColor: 
+        case PixelRedGreenBlueReserved8BitPerColor:
             rm = 0xFF0000;
             gm = 0x00FF00;
             bm = 0x0000FF;
@@ -443,9 +443,9 @@ static void exit_boot(void) {
     for(int retry = 0; retry < 7; ++retry) {
         if(read_map(_mmap, _mmap_buf_pages * PG, &size, &key, &desc) != EFI_SUCCESS)
             continue;
-        if(size > _mmap_buf_pages * PG) 
+        if(size > _mmap_buf_pages * PG)
             fatal("mmap buffer too small.");
-        
+
         _mmap_size  = size;
         _mmap_dsize = desc;
 
@@ -456,8 +456,8 @@ static void exit_boot(void) {
     fatal("boot exit error.");
 }
 
-extern void tramp(unsigned long long pml4, unsigned long long entry, 
-                                  unsigned long long bi_vaddr, unsigned long long kern_paddr, 
+extern void tramp(unsigned long long pml4, unsigned long long entry,
+                                  unsigned long long bi_vaddr, unsigned long long kern_paddr,
                                   unsigned long long stack_top);
 
 EFI_STATUS
@@ -487,7 +487,7 @@ efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE* SystemTable) {
 
     unsigned long long size, desc_size;
     EFI_MEMORY_DESCRIPTOR* probe = probe_map(&size, &desc_size);
-    
+
     _ram_top = 0;
     for(unsigned long long i = 0; i * desc_size < size; ++i) {
         EFI_MEMORY_DESCRIPTOR* d = DESC_AT(probe, desc_size, i);
@@ -495,7 +495,7 @@ efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE* SystemTable) {
             continue;
 
         unsigned long long end = d->PhysicalStart + d->NumberOfPages * PG;
-        if(end > _ram_top) 
+        if(end > _ram_top)
             _ram_top = end;
     }
     _ram_top     = (_ram_top + 0x1FFFFFULL) & ~0x1FFFFFULL;
@@ -506,7 +506,7 @@ efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE* SystemTable) {
     load_kernel(root);
     Print(L"[BOOT]: kernel phys addr: %x, %x pages (code %x), entry %x\r\n", _kern_phys, _kern_pages,
           _kern_code_pages, _kern_entry);
-    
+
     _stack_phys = alloc_pages(LOW_TOP, KERNEL_STACK_PG, EfiLoaderData);
     _stack_top  = KSTACK_VBASE + KERNEL_STACK_PG * PG;
     _bi_phys    = alloc_pages(LOW_TOP, 1, EfiLoaderData);
@@ -529,23 +529,23 @@ efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE* SystemTable) {
     _bootinfo.identity_base = 0;
     _bootinfo.kern_base     = KERNEL_VBASE;
     _bootinfo.kern_size     = _kern_size;
-    _bootinfo.hight_half    = 1;
+    _bootinfo.high_half    = 1;
     _bootinfo.bitmap_vaddr  = PMMBMP_VBASE;
     _bootinfo.bitmap_size   = _bmap_pages * PG;
     _bootinfo.mmap_paddr    = _mmap_phys;
     _bootinfo.kern_paddr    = _kern_phys;
     _bootinfo.kern_code_pg  = _kern_code_pages;
     _bootinfo.fb.base       = KERNEL_FB_VBASE;
-    
+
     exit_boot();
     build_bitmap();
     _bootinfo.mmap_size   = _mmap_size;
     _bootinfo.mmap_dsize  = _mmap_dsize;
     _bootinfo.total_pages = _total_pages;
     b_memcpy((void*)(UINTN)_bi_phys, &_bootinfo, sizeof(_bootinfo));
-    
+
     enable_nx();
-    
+
     tramp((unsigned long long)(UINTN)_pml4, _kern_entry, _bi_phys, _kern_phys, _stack_top);
-    return EFI_SUCCESS; 
+    return EFI_SUCCESS;
 }

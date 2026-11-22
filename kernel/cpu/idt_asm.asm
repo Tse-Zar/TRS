@@ -9,7 +9,7 @@
 
 [EXTERN isr_dispatcher]
 [GLOBAL isr_stub_table]
-
+[GLOBAL isr_restore]
 
 %macro ISR_NOERR 1
 isr_stub_%1:
@@ -79,13 +79,7 @@ isr_common:
     push r10
     push r9
     push r8
-    
-    xor eax, eax
-    mov ax, ds
-    push rax
-    xor eax, eax
-    mov ax, es
-    push rax
+
     xor eax, eax
     mov ax, fs
     push rax
@@ -95,19 +89,17 @@ isr_common:
 
     cld
     mov rdi, rsp
-    mov rbp, rsp
     and rsp, -16
     call isr_dispatcher
-    mov rsp, rbp
+    test rax, rax
+    jz isr_bad_frame
+    mov rsp, rax
 
+isr_restore:
     pop rax
     mov gs, ax
     pop rax
     mov fs, ax
-    pop rax
-    mov es, ax
-    pop rax
-    mov ds, ax
 
     pop r8
     pop r9
@@ -127,8 +119,10 @@ isr_common:
 
     add rsp, 16
     iretq
+isr_bad_frame:
+    ud2             ; panic
 
-section .data
+section .rodata
 align 8
 isr_stub_table:
 %assign i 0

@@ -34,7 +34,7 @@ _start:
     mov dx, 0x3F8
     mov al, 'E'
     out dx, al
-    
+
     xor ebp, ebp
     mov rbx, rdi
 
@@ -44,7 +44,7 @@ _start:
     sub rcx, rdi
     xor eax, eax
     rep stosb
-    
+
     call stack_guard_init
     mov rdi, rbx
     call kmain

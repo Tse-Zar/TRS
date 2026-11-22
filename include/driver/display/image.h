@@ -1,0 +1,23 @@
+#ifndef IMAGE_H
+#define IMAGE_H
+
+#include <bootinfo.h>
+#include <types.h>
+
+#define _PanicGraphit 0x121212
+#define _PanicDark    0x1a1a1a
+#define _PanicRed     0xff4444
+#define _PanicOrange  0xff6b00
+
+void dsp_init(framebuf_info_t frame);
+void dsp_set_color(uint col_fg, uint col_bg);
+void dsp_set_cursor(uint x, uint y);
+void dsp_clear(void);
+void dsp_flip(void);
+
+void dsp_print(const char* str);
+void dsp_putchar(char c);
+void dsp_print_hex(ullong v);
+void dsp_print_dec(int num);
+
+#endif

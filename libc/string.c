@@ -10,8 +10,8 @@
 #include <stdint.h>
 
 void* memset(void* dst, int val, size_t len) {
-    unsigned char* d = (unsigned char*)dst;
-    while(len--) *d++ = (unsigned char)val;
+    uchar* d = (uchar*)dst;
+    while(len--) *d++ = (uchar)val;
 
     return dst;
 }
@@ -19,8 +19,8 @@ void* memset(void* dst, int val, size_t len) {
 
 // safety slow (rewritte soon)
 void* memcpy(void* dst, const void* src, size_t len) {
-    unsigned char* d = (unsigned char*)dst;
-    const unsigned char* s = (const unsigned char*)src;
+    uchar* d = (uchar*)dst;
+    const uchar* s = (const uchar*)src;
 
     while(len > 0 && ((uintptr_t)d & 3) != 0) {
         *d++ = *s++;
@@ -52,8 +52,8 @@ void* memcpy(void* dst, const void* src, size_t len) {
         len -= 8;
     }
 
-    d = (unsigned char*)d64;
-    s = (unsigned char*)s64;
+    d = (uchar*)d64;
+    s = (uchar*)s64;
 
     while(len > 0) {
         *d++ = *s++;
@@ -65,10 +65,10 @@ void* memcpy(void* dst, const void* src, size_t len) {
 
 void* memmove(void* dst, const void* src, size_t len) {
     if(dst > src) {
-        unsigned char* d = (unsigned char*)dst + len;
-        unsigned char* s = (unsigned char*)src + len;
+        uchar* d = (uchar*)dst + len;
+        uchar* s = (uchar*)src + len;
         while(len--) *--d = *--s;
-        
+
         return dst;
     } else if(dst < src) {
         return memcpy(dst, src, len);
@@ -79,8 +79,8 @@ void* memmove(void* dst, const void* src, size_t len) {
 
 // maybe slow
 int memcmp(const void* a, const void* b, size_t len) {
-    const unsigned char* first = (const unsigned char*)a;
-    const unsigned char* second = (const unsigned char*)b;
+    const uchar* first = (const uchar*)a;
+    const uchar* second = (const uchar*)b;
 
     while(len--) {
         if(*first != *second) return *first - *second;
@@ -108,20 +108,20 @@ int strcmp(const char* a, const char* b) {
         b++;
     }
 
-    return *(unsigned const char*)a - *(unsigned const char*)b;
+    return *(const unsigned char*)a - *(const unsigned char*)b;
 }
 
 
 int strncmp(const char* a, const char* b, size_t len) {
     if(len == 0) return 0;
-    
+
     while(len-- && (*a != '\0' && *b != '\0')) {
         if(*a != *b) break;
         a++;
         b++;
     }
 
-    return *(unsigned const char*)a - *(unsigned const char*)b;
+    return *(const unsigned char*)a - *(const unsigned char*)b;
 }
 
 char* strcat(char* dst, const char* src) {
@@ -138,7 +138,7 @@ char* strrchr(const char *str, int ch) {
     char* last = NULL;
 
     do {
-        if(*str == (unsigned char)ch) {
+        if(*str == (uchar)ch) {
             last = (char*)str;
         }
     } while(*str++);
@@ -148,7 +148,7 @@ char* strrchr(const char *str, int ch) {
 
 char* strcpy(char *dst, const char *src) {
     if(!dst || !src) return NULL;
-    
+
     char* ptr = dst;
 
     while((*dst++ = *src++)) {}
