@@ -1,3 +1,13 @@
+/*
+    ======================================
+    = TSEZAR TSEZAR TSEZAR TSEZAR TSEZAR =
+    = ---------------------------------- =
+    = Main t3rm code --- comand parser & =
+    = env work + maybe pluggins and cust =
+    = om om om om om om om om om om om   =
+    ======================================
+*/
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>

@@ -8,6 +8,7 @@
 
 #include <string.h>
 #include <stdint.h>
+#include <types.h>
 
 void* memset(void* dst, int val, size_t len) {
     uchar* d = (uchar*)dst;

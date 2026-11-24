@@ -10,6 +10,7 @@
 #define MAX_THREADS  64
 #define MSG_WORDS    8
 #define IPC_MAX_CAPS 32
+#define IPC_REGS_FOR_MSG 8
 
 typedef struct {
     uint type;
@@ -49,6 +50,13 @@ typedef struct {
     cap_t              caps[IPC_MAX_CAPS];
 } task_t;
 
+typedef struct {
+    ullong msg_regs[IPC_REGS_FOR_MSG];
+    uint   msg_ingo;
+    uint   badge;
+    uint  sender_tsd; // sender`s thread-specification-data
+} ipc_buffer_t;
+
 typedef struct thread {
     /* --- Context --- */
     _regs_t*           frame;
@@ -60,12 +68,7 @@ typedef struct thread {
     int                exit_code;
 
     /* --- IPC ---*/
-    struct thread*     ipc_next;
-    struct thread*     ipc_sender;
-    msg_t              ipc_msg;
-    msg_t              reply;
-    int                ipc_wait;
-    int                ipc_ready;
+    ipc_buffer_t ipc_buf;
 } thread_t;
 
 

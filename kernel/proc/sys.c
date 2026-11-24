@@ -44,7 +44,7 @@ void syscall_init(void) {
 
     uint low, high;
     __asm__ volatile("rdmsr" : "=a"(low), "=d"(high) : "c"(MSR_EFER));
-    wrmsr(MSR_EFER, (((ullong)hight << 32) | low) | EFER_SCE);
+    wrmsr(MSR_EFER, (((ullong)high << 32) | low) | EFER_SCE);
 
     ullong star = ((ullong)0x10 << 48) | ((ullong)GDT_KERNEL_CODE << 32);
 
