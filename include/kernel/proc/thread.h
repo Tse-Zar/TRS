@@ -7,27 +7,10 @@
 #define USER_BASE    0x0000004000000000ULL
 #define USER_TOP     0x0000008000000000ULL
 #define KSTACK_PAGES 4
-#define MAX_THREADS  64
+#define MAX_THREADS  128
 #define MSG_WORDS    8
-#define IPC_MAX_CAPS 32
+#define IPC_MAX_CAPS 16
 #define IPC_REGS_FOR_MSG 8
-
-typedef struct {
-    uint type;
-    uint rights;
-    void*        obj;
-    uint badge;
-    uint gen;
-    uint death;
-} cap_t;
-
-typedef struct {
-    uint label;
-    uint words;
-    uint caps;
-    ullong w[MSG_WORDS];
-    uint badge;
-} msg_t;
 
 typedef enum {
     TH_FREE = 0,
@@ -40,36 +23,44 @@ typedef enum {
 
 typedef struct {
     ullong cr3;
-    uint       pid;
+    uint   pid;
 
     ullong image_base;
-    uint       image_pages;
+    uint   image_pages;
     ullong ustack_base;
-    uint       ustack_pages;
-
-    cap_t              caps[IPC_MAX_CAPS];
+    uint   ustack_pages;
 } task_t;
-
-typedef struct {
-    ullong msg_regs[IPC_REGS_FOR_MSG];
-    uint   msg_ingo;
-    uint   badge;
-    uint  sender_tsd; // sender`s thread-specification-data
-} ipc_buffer_t;
 
 typedef struct thread {
     /* --- Context --- */
-    _regs_t*           frame;
-    th_state_t         state;
-    ullong kstack_top;
-    ullong ustack_top;
-    task_t*            task;
-    uint       tid;         // thread id : view-format pid ~ tid for current thread
-    int                exit_code;
+    _regs_t*   frame;
+    th_state_t state;
+    ullong     kstack_top;
+    task_t*    task;
+    uint       tid;         // thread id
+    int        exit_code;
 
-    /* --- IPC ---*/
-    ipc_buffer_t ipc_buf;
+    /* --- IPC --- */
+    struct {
+        uint   label;
+        uint   sender_tid;
+        ullong regs[MSG_WORDS];
+        uint   valid;
+    } ipc_recv;
+
+    /* --- wait list --- */
+    struct thread* next;
+    struct thread* prev;
 } thread_t;
 
+/* --- scheduler --- */
+void      sched_init(void);
+thread_t* sched_next(void);
+void      sched_switch(_regs_t* frame);
+void      sched_block(thread_t* th);
+void      sched_wake(thread_t* th);
+void sched_wake_all(void);
+void sched_on_timer(_regs_t* reg);
+void sched_on_syscall(_regs_t *reg);
 
 #endif //THREAD_H

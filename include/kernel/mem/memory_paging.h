@@ -26,6 +26,10 @@ ullong pmm_used_pages(void);
 ullong pmm_total_pages(void);
 
 /* --- virtual memory map --- */
-void* vmm_init(void);
+ullong* vmm_init(void);
+// void vmm_map_page(ullong cr3, ullong vaddr, ullong paddr, ullong flags);
+void vmm_map_user(ullong cr3, ullong img_phys, ullong img_size, ullong stack_phys, ullong stack_size);
+void vmm_switch(ullong cr3);
+ullong vmm_get_cr3(void);
 
 #endif // MEMORY_PAGING_H

@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #define IPC_MSG_MAX 128        // bytes
+#define MAX_IPC_OBJ 7
 
 #define IPC_SEND      (1U << 0)
 #define IPC_RECEIVE   (1U << 1)
