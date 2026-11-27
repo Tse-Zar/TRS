@@ -349,7 +349,7 @@ endif
 
 # --- clean ---
 clean:
-	rm -rf $(BUILD) serial.log qemu.log qemu-serial.log compile_commands.json
+	rm -rf $(BUILD) serial.log qemu.log qemu-serial.log
 
 # --- deps ---
 -include $(KOBJ:.o=.d) $(BOOT_OBJ:.o=.d) $(TERM_OBJ:.o=.d) $(UNIV_OBJ:.o=.d)

@@ -148,7 +148,7 @@ static void map_page(ullong* pml4, ullong vaddr, ullong paddr, ullong flags) {
     if(!(pd[pd_idx] & PTE_P)) {
         ullong pt_phys = (ullong)alloc_pages(1);
         memset((void*)pt_phys, 0, PAGE_SIZE);
-        pd[pd_idx] = pt_phys | PTE_P | PTE_WR | flags;
+        pd[pd_idx] = pt_phys | PTE_P | PTE_WR;
         pt = (ullong*)pt_phys;
     } else {
         pt = (ullong*)(pd[pd_idx] & PTE_ADDR);
@@ -186,11 +186,11 @@ void vmm_map_user(ullong cr3, ullong img_phys, ullong img_size, ullong stack_phy
     /* --- stack RW --- */
     ullong stack_pages = (stack_size + PAGE_SIZE - 1) / PAGE_SIZE;
     for(ullong p = 0; p < stack_pages; ++p) {
-        map_page(pml4, USER_TOP - (p + 1 ) * PAGE_SIZE, stack_phys, USER_DATA_FLAGS);
+        map_page(pml4, USER_TOP - (p + 1 ) * PAGE_SIZE, stack_phys + p * PAGE_SIZE, USER_DATA_FLAGS);
     }
 
     /* --- guard --- */
-    map_page(pml4, USER_TOP - stack_pages - img_pages, 0, 0);
+    map_page(pml4, USER_TOP - (stack_pages + img_pages) * PAGE_SIZE, 0, 0);
 }
 
 void vmm_switch(ullong cr3) {

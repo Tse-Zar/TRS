@@ -3,7 +3,6 @@
     = TSEZAR TSEZAR TSEZAR TSEZAR TSEZAR =
     ======================================
     = Tsezar Reliable System   - Kernel  =
-    = -------------------------- v 0.0.4 =
     ======================================
 */
 
@@ -42,9 +41,9 @@ static const char* statue[24] = {"    %%%", "   =====","  &%&%%%&", "  %& < <% "
 "   |(     | ","   |  \\ \\ |","    \\  )\\ |","   __)/ / \\","--\"--(_.Ooo'----" };
 
 #define PRINT_STATUE \
-    if(i < 24) { \
+    if(part_of_statue < 24) { \
         dsp_set_color(_Red, _Crust); \
-        dsp_print(statue[i++]); \
+        dsp_print(statue[part_of_statue++]); \
         dsp_set_cursor(30, 0); \
         dsp_set_color(_Sapphire, _Crust); \
     }
@@ -62,17 +61,22 @@ void kmain(boot_info_t* bi) {
     dbg('K');
     memcpy(&_boot, bi, sizeof(boot_info_t));
 
-    /* --- inits --- */
+    /* --- pre-work inits --- */
     gdt_init();
     pic_remap(IRQ_BASE);
     idt_init();
     timer_init(TIMER_HZ);
     pmm_init(&_boot);
+    int part_of_statue = 0;
 
-    int i = 0;
+    /* --- display init ---
+     * use GOP(UEFI) framebuffer & backbuffer
+     * flip after every dsp_print & dsp_print_dec
+     * now flip all buffer maybe can flip only the modified ones
+    */
     dsp_init(_boot.fb);
     PRINT_STATUE
-    dsp_set_color(_Sapphire, _Crust);
+    dsp_set_color(_Sapphire, _Crust); // main kernel-cli color
     dsp_print("Display initialized. ");
     YES
 
@@ -166,8 +170,6 @@ void kmain(boot_info_t* bi) {
     dsp_print("> [SYSTEM] ready.\n\n");
 
     __asm__ volatile("sti");
-
-    dsp_set_color(_Red, _Crust);
 
     dsp_set_color(_Yantar, _Crust);
     dsp_print("START TERMINAL..\n");

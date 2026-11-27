@@ -6,10 +6,13 @@
 #include <timer.h>
 #include <types.h>
 
+
+/* --- threads --- */
 static thread_t  threads[MAX_THREADS];
 static thread_t* current_thread = NULL;
 static uint      thread_count   = 0;
 
+/* --- queue --- */
 static thread_t run_queue_head = {0};
 static thread_t run_queue_tail = {0};
 static uint     run_queue_len  = 0;

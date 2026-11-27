@@ -16,12 +16,6 @@ static void app_exit_tramp(void) {
     }
 }
 
-static ullong read_cr3(void) {
-    ullong v;
-    __asm__ volatile("mov %%cr3, %0" : "=r"(v));
-    return v;
-}
-
 int start_proc(const char *path) {
     File file;
     int bytes = 0;
@@ -81,8 +75,8 @@ int start_proc(const char *path) {
 
     ullong stack_top = stack + APP_STACK_SIZE;
     *(ullong*)(stack_top - 8) = (ullong)app_exit_tramp;
-/*
-    thread_t* t = thread_create(loaded_addr, read_cr3() & PTE_ADDR, stack_top - 8, 0);
+
+    thread_t* t = {0}; //thread_create(loaded_addr, vmm_get_cr3() & PTE_ADDR, stack_top - 8, 0);
     if(!t) {
             for(ullong i = 0; i < img_pages + APP_BSS_SLACK; ++i) {
             free_page((void*)(loaded_addr + (i * PAGE_SIZE)));
@@ -96,6 +90,6 @@ int start_proc(const char *path) {
     t->task->ustack_base  = stack;
     t->task->ustack_pages = APP_STACK_SIZE / PAGE_SIZE;
     t->task->image_pages  = total;
-*/
+
     return PRO_OK;
 }

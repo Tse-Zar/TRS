@@ -5,10 +5,13 @@
 #include <bootinfo.h>
 
 #define PRO_MAGIC    0x54525350u // soon
-#define PRO_NAME_MAX 16
+#define PRO_NAME_MAX 128
 
 #define USER_BASE       0x0000004000000000ULL
 #define USER_TOP        0x0000008000000000ULL
+#define DEV_BASE        0x0000002000000000ULL
+#define DEV_TOP         0x0000004000000000ULL
+
 #define USER_STACK_SIZE (64 * 1024)
 #define USER_CODE_FLAGS (PTE_US | PTE_P | PTE_WR)
 #define USER_DATA_FLAGS (PTE_US | PTE_P | PTE_WR)

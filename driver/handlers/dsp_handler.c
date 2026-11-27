@@ -1,0 +1,9 @@
+#include <dsp_handler.h>
+#include <memory_paging.h>
+#include <string.h>
+#include <panic.h>
+#include <image.h>
+#include <colors.h>
+#include <ipc.h>
+#include <thread.h>
+#include <types.h>

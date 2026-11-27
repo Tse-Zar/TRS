@@ -4,8 +4,6 @@
 #include <types.h>
 #include <idt.h>
 
-#define USER_BASE    0x0000004000000000ULL
-#define USER_TOP     0x0000008000000000ULL
 #define KSTACK_PAGES 4
 #define MAX_THREADS  128
 #define MSG_WORDS    8
@@ -36,9 +34,9 @@ typedef struct thread {
     _regs_t*   frame;
     th_state_t state;
     ullong     kstack_top;
-    task_t*    task;
+    task_t*    task;        // thread can have some tasks
     uint       tid;         // thread id
-    int        exit_code;
+    int        exit_code;   // thread exit code
 
     /* --- IPC --- */
     struct {
@@ -54,13 +52,14 @@ typedef struct thread {
 } thread_t;
 
 /* --- scheduler --- */
-void      sched_init(void);
-thread_t* sched_next(void);
-void      sched_switch(_regs_t* frame);
-void      sched_block(thread_t* th);
-void      sched_wake(thread_t* th);
-void sched_wake_all(void);
-void sched_on_timer(_regs_t* reg);
-void sched_on_syscall(_regs_t *reg);
+void           sched_init(void);
+thread_t*      sched_next(void);
+void           sched_switch(_regs_t* frame);
+void           sched_block(thread_t* th);
+void           sched_wake(thread_t* th);
+void           sched_on_timer(_regs_t* reg);
+void           sched_on_syscall(_regs_t *reg);
+void           thread_exit(int code);
+thread_t*      thread_create(ullong addr, ullong cr3, ullong stack_top, int user);
 
 #endif //THREAD_H

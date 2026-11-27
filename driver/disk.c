@@ -182,7 +182,7 @@ int write_disk(uint id, ullong lba, uint count, const void* buf) {
         if(ata_wait_bsy(io) != 0) return -1;
         if(ata_wait_drq(io) != 0) return -1;
 
-        for(int i = 0; i < 256; ++i) outw(*p++, io + ATA_REG_DATA);
+        for(int i = 0; i < 256; ++i) outw(io + ATA_REG_DATA,*p++);
         ata_delay400(ctrl);
     }
 

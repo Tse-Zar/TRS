@@ -30,8 +30,8 @@ void* memcpy(void* dst, const void* src, size_t len) {
 
     int s_is_aligned = ((uintptr_t)s & 3) == 0;
 
-    uint64_t* d64 = (uint64_t*)d;
-    uint64_t* s64 = (uint64_t*)s;
+    ullong* d64 = (ullong*)d;
+    ullong* s64 = (ullong*)s;
 
     while(len >= 64 && s_is_aligned) {
         d64[0] = s64[0];
@@ -62,7 +62,6 @@ void* memcpy(void* dst, const void* src, size_t len) {
     }
     return dst;
 }
-
 
 void* memmove(void* dst, const void* src, size_t len) {
     if(dst > src) {

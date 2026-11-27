@@ -21,7 +21,7 @@ static inline ushort inw(ushort port) {
     return word;
 }
 
-static inline void outw(ushort w, ushort port) {
+static inline void outw(ushort port, ushort w) {
     __asm__ volatile("outw %0, %1" :: "a"(w), "Nd"(port));
 }
 
